@@ -1,4 +1,4 @@
-# requestMagic
+# requestsMagic
 
 效仿 scrapy 制作的极简爬虫框架
 
