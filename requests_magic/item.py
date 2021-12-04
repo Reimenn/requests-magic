@@ -1,6 +1,8 @@
 class Item:
-    def __init__(self, data: dict, spider=None, meta: dict = {}):
+    def __init__(self, data: dict, spider=None, meta: dict = None):
         super().__init__()
+        if meta is None:
+            meta = {}
         self.data = data
         self.spider = spider
         self.scheduler = None

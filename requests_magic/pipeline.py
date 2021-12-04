@@ -1,5 +1,5 @@
 import threading
-from requestsMagic.logger import logger
+from .logger import Logger
 
 
 class Pipeline(threading.Thread):
@@ -21,9 +21,9 @@ class Pipeline(threading.Thread):
                 del self.items[0]
                 try:
                     self.save(item)
-                    logger.info(f"[SAVE {len(self.items)}]")
+                    Logger.info(f"[SAVE {len(self.items)}]")
                 except Exception as e:
-                    logger.error(f"[SAVE {len(self.items)}] {e}")
+                    Logger.error(f"[SAVE {len(self.items)}] {e}")
 
     def save(self, item):
         pass

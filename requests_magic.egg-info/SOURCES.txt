@@ -1,0 +1,14 @@
+LICENSE
+setup.py
+requests_magic/__init__.py
+requests_magic/item.py
+requests_magic/logger.py
+requests_magic/pipeline.py
+requests_magic/request.py
+requests_magic/scheduler.py
+requests_magic/spider.py
+requests_magic.egg-info/PKG-INFO
+requests_magic.egg-info/SOURCES.txt
+requests_magic.egg-info/dependency_links.txt
+requests_magic.egg-info/requires.txt
+requests_magic.egg-info/top_level.txt

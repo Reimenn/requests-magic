@@ -1,4 +1,4 @@
-# requestsMagic
+# requests-magic
 
 效仿 scrapy 制作的极简爬虫框架
 
@@ -19,15 +19,18 @@
 调用 quick_start 方法开始爬虫，方法内会自动配置 Scheduler
 
 ```python
-import requestsMagic as rm
+import requests_magic as rm
+
 
 class MySpider(rm.Spider):
     ...
 
+
 class MyPipeline(rm.Pipeline):
     ...
 
-rm.quick_start(MySpider(),MyPipeline())
+
+rm.quick_start(MySpider(), MyPipeline())
 ```
 
 重写 Spider 的 start 方法开始第一个请求，默认会在 parse 方法中处理结果：

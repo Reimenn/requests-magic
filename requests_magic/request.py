@@ -1,5 +1,5 @@
 from typing import Callable
-from requestsMagic.logger import logger
+from .logger import Logger
 import requests
 import threading
 import time
@@ -10,16 +10,24 @@ def requests_download(request) -> requests.Response:
     Default download function (downloader)
     """
     request: Request
-    return requests.request(request.method, request.url, data=request.data, headers=request.headers)
+    return requests.request(
+        request.method, request.url, data=request.data, headers=request.headers
+    )
 
 
 class Request(threading.Thread):
-    def __init__(self, url: str, callback: Callable, spider=None, data: dict = {}, headers: dict = {}, method: str = '',
-                 downloader: Callable = requests_download, meta: dict = {}):
+    def __init__(self, url: str, callback: Callable, spider=None, data: dict = None, headers: dict = None,
+                 method: str = '', downloader: Callable = requests_download, meta: dict = None):
         """
         :param downloader: download function
         """
         super().__init__()
+        if meta is None:
+            meta = {}
+        if data is None:
+            data = {}
+        if headers is None:
+            headers = {}
         self.url: str = url
         self.data: dict = data
         self.callback: Callable = callback
@@ -51,9 +59,9 @@ class Request(threading.Thread):
 
     def run(self) -> None:
         show_url = self.url if len(self.url) < 40 else '...' + self.url[-37:-1]
-        logger.info(f"[START {self.method} {len(self.scheduler.link_requests)}] {show_url}")
+        Logger.info(f"[START {self.method} {len(self.scheduler.link_requests)}] {show_url}")
         self.start_time = time.time()
         result = self.downloader(self)
         self.time = time.time() - self.start_time
-        logger.info(f"[OVER {self.method} {round(self.time, 2)}s] {show_url}")
+        Logger.info(f"[OVER {self.method} {round(self.time, 2)}s] {show_url}")
         self.scheduler.downloader_over(result, self)

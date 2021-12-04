@@ -1,31 +1,19 @@
-import requestsMagic
-from lxml import etree
+import requests_magic
 
 
-class TestSpider(requestsMagic.Spider):
+class TestSpider(requests_magic.Spider):
     def start(self):
         return self.request("https://www.runoob.com/html/html-tutorial.html")
 
     def parse(self, result, request):
         text = result.text
-        tree = etree.HTML(text)
-        a_list = tree.xpath(r'//div[@id="leftcolumn"]/a[@target="_top"]')
-        for a in a_list:
-            t = str(a.xpath('text()')[0]).strip()
-            u = str(a.xpath('@href')[0]).strip()
-            r = self.request("https://www.runoob.com/" + u, callback=self.parse_inner)
-            r['title'] = t
-            yield r
-
-    def parse_inner(self, result, request):
-        item = self.item(result.text)
-        item['title'] = request['title']
-        yield item
+        yield self.item({'content': text})
 
 
-class TestPipeline(requestsMagic.Pipeline):
+class TestPipeline(requests_magic.Pipeline):
     def save(self, item):
+        print(item)
         pass
 
 
-requestsMagic.quick_start(TestSpider(), TestPipeline())
+requests_magic.quick_start(TestSpider(), TestPipeline())
