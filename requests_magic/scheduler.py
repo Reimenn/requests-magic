@@ -1,28 +1,36 @@
-from typing import List, Iterable
+from typing import List, Iterable, Union
 from .request import Request
 from .item import Item
 from .pipeline import Pipeline
 from .logger import Logger
+from .exceptions import *
 import threading
 import time
 
 
 class Scheduler(threading.Thread):
 
-    def __init__(self, pipeline, max_link: int = 12,
+    def __init__(self, pipeline: Union[Pipeline, List[Pipeline]], max_link: int = 12,
                  request_interval: float = 0, distinct: bool = True):
         """
         A request scheduler, which is the core of the crawler
         """
         super().__init__()
         self.distinct = distinct
-        self.pipeline: Pipeline = pipeline
+        if isinstance(pipeline, list):
+            self.pipeline_list: List[Pipeline] = pipeline
+        elif isinstance(pipeline, Pipeline):
+            self.pipeline_list: List[Pipeline] = [pipeline]
+        else:
+            raise SchedulerError('pipeline must be a Pipeline or Pipeline list')
         self.max_link: int = max_link
         self.request_interval: float = request_interval
         self.requests: List[Request] = []
         self.link_requests: List[Request] = []
         self.requests_md5: List[str] = []
-        self.pipeline.start()
+        for pl in self.pipeline_list:
+            if not pl.daemon:
+                pl.start()
 
     def add_request(self, request: Request) -> None:
         md5: str = request.md5()
@@ -33,11 +41,14 @@ class Scheduler(threading.Thread):
         self.requests.append(request)
         self.requests_md5.append(md5)
 
-    def add_item(self, item: Item) -> None:
+    def add_item(self, item: Item, from_spider=None) -> None:
         item.scheduler = self
-        self.pipeline.add_item(item)
+        item.spider = from_spider
+        for pl in self.pipeline_list:
+            if pl.acceptable(item):
+                pl.add_item(item)
 
-    def add_callback_result(self, result_ite) -> None:
+    def add_callback_result(self, result_ite, from_spider=None) -> None:
         if result_ite is None:
             return
         if not isinstance(result_ite, Iterable):
@@ -46,7 +57,7 @@ class Scheduler(threading.Thread):
             if isinstance(result, Request):
                 self.add_request(result)
             elif isinstance(result, Item):
-                self.add_item(result)
+                self.add_item(result, from_spider=from_spider)
             else:
                 Logger.warning(
                     f"Cannot handle {str(type(result))}, " +
@@ -72,10 +83,10 @@ class Scheduler(threading.Thread):
         Call from request. When the request is completed,
         remove the request, execute the callback and process the result
         """
-        # remove request
         self.link_requests.remove(request)
+        result = request.preparse(result, request)
         call = request.callback(result, request)
-        self.add_callback_result(call)
+        self.add_callback_result(call, request.spider)
 
     def downloader_abandon(self, request: Request) -> None:
         """

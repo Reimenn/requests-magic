@@ -18,8 +18,14 @@ class Spider:
         """
         pass
 
+    def preparse(self, result: requests.Response, request: Request) -> requests.Response:
+        """
+        call when callback before, return to callback result
+        """
+        return result
+
     def request(self, url: str, callback: Callable, data: dict = None,
-                meta: dict = None, headers: dict = None) -> Request:
+                tags: dict = None, headers: dict = None, **kwargs) -> Request:
         """
         Create a request
         (it is not recommended to instantiate the Request class directly, Using this method is the best)
@@ -27,25 +33,25 @@ class Spider:
         :param data: data
         :param url: url
         :param callback: parse function
-        :param meta: extra information
+        :param tags: extra information
         """
         warnings.warn("Recommend direct instantiation Request", DeprecationWarning)
-        if meta is None:
-            meta = {}
+        if tags is None:
+            tags = {}
         if headers is None:
             headers = {}
         return Request(url=url,
                        callback=callback if callback else self.parse,
-                       data=data, meta=meta, headers=headers)
+                       data=data, tags=tags, headers=headers, **kwargs)
 
-    def item(self, data: dict, meta: dict = None) -> Item:
+    def item(self, data: dict, tags: dict = None, **kwargs) -> Item:
         """
         Create a item
         (it is not recommended to instantiate the Item class directly, Using this method is the best)
         :param data: data
-        :param meta: extra information
+        :param tags: extra information
         """
         warnings.warn("Recommend direct instantiation Item", DeprecationWarning)
-        if meta is None:
-            meta = {}
-        return Item(data, meta=meta)
+        if tags is None:
+            tags = {}
+        return Item(data, tags=tags, **kwargs)

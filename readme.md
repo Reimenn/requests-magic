@@ -40,7 +40,7 @@ class MySpider(rm.Spider):
     def start(self):
         yield rm.Request("http://balabala.com",self.parse)
     def parse(self, result, request):
-        yield rm.Item(result.text, meta={'path':'./out'})
+        yield rm.Item(result.text, tags={'path':'./out'})
 ```
 
 可以使用 yield 返回多个 Request 或 Item，也可以用 return 只返回一个，或 return 一个包含 request 或 item 的 list
@@ -50,8 +50,7 @@ class MySpider(rm.Spider):
 ```python
 class MyPipeline(rm.Pipeline):
     def save(self,item):
-        # item 和 request 都支持索引来读写 meta 中的值
-        with open(item['path'],'w') as f:
+        with open(item.tags['path'],'w') as f:
             f.write(item.data) # item.data 才是真正的数据
 ```
 

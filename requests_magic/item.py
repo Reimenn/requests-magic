@@ -1,22 +1,13 @@
-class Item:
-    def __init__(self, data: dict, meta: dict = None):
+class Item(dict):
+    def __init__(self, data: dict, tags: dict = None):
         super().__init__()
-        if meta is None:
-            meta = {}
-        self.data = data
-        self.meta: dict = meta
 
-    def __getitem__(self, item):
-        return self.meta[item]
+        for k, v in data.items():
+            self[k] = v
 
-    def __setitem__(self, key, value):
-        self.meta[key] = value
+        if tags is None:
+            tags = {}
+        self.tags: dict = tags
 
-    def has_key(self, key) -> bool:
-        """
-        KEY exist in META
-        """
-        return key in self.meta.keys()
-
-    def __str__(self) -> str:
-        return str(self.data)
+        self.spider = None
+        self.scheduler = None

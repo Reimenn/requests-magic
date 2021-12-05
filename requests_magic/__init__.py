@@ -8,24 +8,25 @@ from typing import Union, List
 
 
 def quick_start(spiders: Union[List[Spider], Spider],
-                pipeline, max_link: int = 12,
+                pipeline: Union[List[Pipeline], Pipeline] = None,
+                max_link: int = 12,
                 request_interval: float = 0,
-                wait: bool = True):
+                wait: bool = True, **kwargs):
     """
-    quick start a web spider, need one or more spider and one pipeline.
+    quick start a web spider, need one or more spider
     """
     if pipeline is None:
-        pipeline = Pipeline()
+        pipeline = [Pipeline()]
 
     _scheduler = Scheduler(pipeline=pipeline,
                            max_link=max_link,
-                           request_interval=request_interval)
+                           request_interval=request_interval, **kwargs)
     if isinstance(spiders, Spider):
         spiders = [spiders]
 
     for s in spiders:
         call = s.start()
-        _scheduler.add_callback_result(call)
+        _scheduler.add_callback_result(call, from_spider=s)
 
     _scheduler.start()
 

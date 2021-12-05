@@ -21,5 +21,8 @@ class Pipeline(threading.Thread):
                 except Exception as e:
                     Logger.error(f"[SAVE {len(self.items)}] {e}")
 
+    def acceptable(self, item) -> bool:
+        return True
+
     def save(self, item):
         pass

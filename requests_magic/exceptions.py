@@ -1,7 +1,17 @@
-class RequestError(Exception):
+class MagicError(Exception):
     """
     requests magic base error
     """
+    pass
+
+class SchedulerError(MagicError):
+    pass
+
+class RequestError(MagicError):
+    """
+    downloader error, to abandon request
+    """
+
     def __init__(self, request):
         self.request = request
 
@@ -25,8 +35,9 @@ class RequestTimeoutError(RequestCanRetryError):
 
 class RequestHttpError(RequestError):
     """
-    Other errors
+    Other errors, to abandon request
     """
+
     def __init__(self, request, code: int):
         super(RequestHttpError, self).__init__(request)
         self.code = code
