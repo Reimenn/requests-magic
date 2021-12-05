@@ -3,10 +3,6 @@ from .logger import Logger
 
 
 class Pipeline(threading.Thread):
-    """
-    管道基类
-    """
-
     def __init__(self):
         super().__init__()
         self.items = []

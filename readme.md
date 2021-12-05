@@ -38,9 +38,9 @@ rm.quick_start(MySpider(), MyPipeline())
 ```python
 class MySpider(rm.Spider):
     def start(self):
-        yield self.request("http://balabala.com")
+        yield rm.Request("http://balabala.com",self.parse)
     def parse(self, result, request):
-        yield self.item(result.text, meta={'path':'./out'})
+        yield rm.Item(result.text, meta={'path':'./out'})
 ```
 
 可以使用 yield 返回多个 Request 或 Item，也可以用 return 只返回一个，或 return 一个包含 request 或 item 的 list

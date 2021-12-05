@@ -1,11 +1,9 @@
 class Item:
-    def __init__(self, data: dict, spider=None, meta: dict = None):
+    def __init__(self, data: dict, meta: dict = None):
         super().__init__()
         if meta is None:
             meta = {}
         self.data = data
-        self.spider = spider
-        self.scheduler = None
         self.meta: dict = meta
 
     def __getitem__(self, item):

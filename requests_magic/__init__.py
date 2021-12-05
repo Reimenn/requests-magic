@@ -1,5 +1,6 @@
 from .scheduler import Scheduler
 from .item import Item
+from .request import Request
 from .pipeline import Pipeline
 from .spider import Spider
 from .logger import Logger, LoggerLevel
@@ -13,6 +14,9 @@ def quick_start(spiders: Union[List[Spider], Spider],
     """
     quick start a web spider, need one or more spider and one pipeline.
     """
+    if pipeline is None:
+        pipeline = Pipeline()
+
     _scheduler = Scheduler(pipeline=pipeline,
                            max_link=max_link,
                            request_interval=request_interval)

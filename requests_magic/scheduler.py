@@ -9,23 +9,29 @@ import time
 
 class Scheduler(threading.Thread):
 
-    def __init__(self, pipeline, max_link: int = 12, request_interval: float = 0):
+    def __init__(self, pipeline, max_link: int = 12,
+                 request_interval: float = 0, distinct: bool = True):
         """
         A request scheduler, which is the core of the crawler
         """
         super().__init__()
+        self.distinct = distinct
         self.pipeline: Pipeline = pipeline
         self.max_link: int = max_link
         self.request_interval: float = request_interval
         self.requests: List[Request] = []
         self.link_requests: List[Request] = []
-        self.over_requests: List[Request] = []
-
+        self.requests_md5: List[str] = []
         self.pipeline.start()
 
     def add_request(self, request: Request) -> None:
+        md5: str = request.md5()
+        if self.distinct and md5 in self.requests_md5:
+            Logger.warning(f'Repeated request: {request}')
+            return
         request.scheduler = self
         self.requests.append(request)
+        self.requests_md5.append(md5)
 
     def add_item(self, item: Item) -> None:
         item.scheduler = self
@@ -70,3 +76,9 @@ class Scheduler(threading.Thread):
         self.link_requests.remove(request)
         call = request.callback(result, request)
         self.add_callback_result(call)
+
+    def downloader_abandon(self, request: Request) -> None:
+        """
+        abandon a request
+        """
+        self.link_requests.remove(request)
