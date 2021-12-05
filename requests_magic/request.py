@@ -15,26 +15,46 @@ def requests_download(request) -> requests.Response:
     """
     request: Request
     response: requests.Response
+    # requests.request args
+    args = {
+        'method': request.method,
+        'url': request.url,
+        'timeout': request.time_out
+    }
+
+    if request.data:
+        if request.method == 'GET':
+            args['params'] = request.data
+        else:
+            if isinstance(request.data, dict):
+                args['json'] = request.data
+            else:
+                args['data'] = request.data
+
+    if request.headers:
+        args['headers'] = request.headers
+
+    for k, v in request.kwargs:
+        if k not in args:
+            args[k] = v
+
     try:
-        response = requests.request(
-            request.method, request.url,
-            data=request.data, headers=request.headers,
-            timeout=request.time_out
-        )
+        response = requests.request(**args)
     except requests.Timeout as timeoutError:
         raise RequestTimeoutError(request)
+
     if response.status_code >= 400:
         raise RequestHttpError(request, response.status_code)
+
     return response
 
 
 class Request(threading.Thread):
 
     def __init__(self, url: str, callback: Callable,
-                 data: dict = None, meta: dict = None,
-                 method: str = None, headers: dict = None,
+                 data: dict = None, method: str = 'GET', headers: dict = None,
                  time_out: int = 10, time_out_wait: int = 5, time_out_retry: int = 3,
-                 downloader: Callable = requests_download):
+                 meta: dict = None, downloader: Callable = requests_download, **kwargs):
         """
         :param headers: request headers, use default_headers if is None
         :param method: http method, default is GET or POST by data
@@ -42,6 +62,7 @@ class Request(threading.Thread):
         :param time_out: request max wait time(s)
         :param time_out_wait: retry wait time if time out
         :param time_out_retry: frequency of retry if time out
+        :param kwargs: Passed to requests.request by default
         """
         super().__init__()
 
@@ -51,25 +72,24 @@ class Request(threading.Thread):
             data = {}
         if headers is None:
             headers = default_headers.copy()
+
         self.url: str = url
         self.data: dict = data
-        self.callback: Callable = callback
+        self.method: str = method
         self.headers: dict = headers
-        if method:
-            self.method: str = method
-        else:
-            self.method: str = 'POST' if self.data else 'GET'
 
-        self.scheduler = None
-
+        self.callback: Callable = callback
         self.downloader = downloader
         self.meta: dict = meta
-        self.start_time: float = -1
-        self.time: float = -1
+        self.scheduler = None
 
-        self.time_out_wait = time_out_wait
-        self.time_out_retry = time_out_retry
-        self.time_out = time_out
+        self.start_time: float = -1
+        self.total_time: float = -1
+        self.time_out: float = time_out
+        self.time_out_wait: float = time_out_wait
+        self.time_out_retry: int = time_out_retry
+
+        self.kwargs = kwargs
 
     def __getitem__(self, item):
         return self.meta[item]
@@ -95,8 +115,8 @@ class Request(threading.Thread):
                 Logger.info(f"[START {self.method} {len(self.scheduler.link_requests)}] {show_url}")
                 self.start_time = time.time()
                 result = self.downloader(self)
-                self.time = time.time() - self.start_time
-                Logger.info(f"[OVER {self.method} {round(self.time, 2)}s] {show_url}")
+                self.total_time = time.time() - self.start_time
+                Logger.info(f"[OVER {self.method} {round(self.total_time, 2)}s] {show_url}")
                 # complete
                 break
             except RequestCanRetryError as e:
