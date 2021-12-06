@@ -1,3 +1,23 @@
+## v1.2-beta-f1
+
+2021年12月6日
+
+---
+
+#### 添加：
+
+**name 属性**
+
+> 给 Pipeline、Spider、Item、Request 添加了 name 属性，会在日志中显示，希望能对排错有帮助
+
+#### 修复：
+
+**重请求添加到调度器**
+
+> 修复了重请求无视调度器请求间隔时间 Bug，现在的重请求会重新添加到 Scheduler 中。
+> 
+> 为此，建立了一个新的 RequestThread 类，Request 类的 start 方法会实例化一个新的 RequestThread 来发送请求（曾经的Request直接继承自Thread，导致其不能反复start，现在可以反复start了）
+
 ## v1.2-beta
 
 2021年12月5日

@@ -1,28 +1,147 @@
+"""
+管道基类和内置的管道
+"""
+
+import os
 import threading
 from .logger import Logger
 
 
 class Pipeline(threading.Thread):
-    def __init__(self):
+    """
+    管道基类，用来持久化数据，这是一个新线程
+    """
+    def __init__(self, name: str = ""):
+        """
+        管道基类，用来持久化数据，这是一个新线程
+        不要实例化这个类，应该继承Pipeline实现你自己的持久化
+        Parameters
+        ----------
+        name
+            管道的名字，希望能帮助 debug
+        """
         super().__init__()
+        self.name = name
         self.items = []
 
+
     def add_item(self, item):
+        """
+        添加新的需要持久化的数据
+        Parameters
+        ----------
+        item
+            要持久化的数据
+        """
         self.items.append(item)
 
     def run(self) -> None:
+        """
+        开启线程，反复监听待保存的 item
+        """
         while True:
             if self.items:
                 item = self.items[0]
                 del self.items[0]
                 try:
                     self.save(item)
-                    Logger.info(f"[SAVE {len(self.items)}]")
+                    Logger.info(f"{self} [SAVE item {item.name} finish]")
                 except Exception as e:
-                    Logger.error(f"[SAVE {len(self.items)}] {e}")
+                    Logger.error(f"{self} [SAVE item {item.name} error] {e}")
+                    raise e
 
     def acceptable(self, item) -> bool:
+        """
+        判断是否可以接收某个 item，调度器会根据这里的返回值判断是否继续用这个管道保存这个item
+        这是一个被好多线程调用的方法
+        Parameters
+        ----------
+        item
+            被判断的item
+        Returns
+        -------
+            能否接收
+        """
         return True
 
     def save(self, item):
+        """
+        真正的持久化方法，在这里保存数据几个
+        这是一个被自身线程调用的方法
+        Parameters
+        ----------
+        item
+            需要持久化的数据
+        """
         pass
+
+    def __str__(self) -> str:
+        return f"[Pipeline - {self.name}]" if self.name else ''
+
+
+class SimpleConsolePipeline(Pipeline):
+    """
+    简单的控制台管道，直接把item转换成字符串并显示在控制台上
+    """
+    def save(self, item):
+        print(str(item))
+
+
+class SimpleFilePipeline(Pipeline):
+    """
+    简单的文件持久化管道
+    """
+    def __init__(self, name: str = "SimpleFilePipeline",
+                 output_file_tag_key: str = 'file',
+                 mode: str = 'a',
+                 auto_create_folder: bool = True,
+                 encoding: str = 'utf-8',
+                 newline: str = '\n',
+                 ):
+        """
+        简单的文件持久化管道
+        Parameters
+        ----------
+        name
+            管道的名字，希望能帮助 debug
+        output_file_tag_key
+            在 item.tags 中表示保存路径的 key，值必须是字符串，默认：file
+        mode
+            文件的打开模式，默认是 a （追加）
+        auto_create_folder
+            是否在自动创建上层目录，默认开启
+        encoding
+            文件编码，默认：utf-8
+        """
+        super().__init__(name)
+        self.newline = newline
+        self.encoding = encoding
+        self.auto_create_folder = auto_create_folder
+        self.mode = mode
+        self.output_file_tag_key = output_file_tag_key
+
+    def acceptable(self, item) -> bool:
+        """
+        判断 output_file_tag_key 是否存在以及值是否是字符串
+        这是会被好多线程调用的方法
+        """
+        return self.output_file_tag_key in item.tags and isinstance(item.tags[self.output_file_tag_key], str)
+
+    def save(self, item):
+        """
+        作为文件保存item
+        这是执行在管道自身线程上的方法
+        """
+        file = item.tags[self.output_file_tag_key]
+        path = os.path.abspath(os.path.join(file, '..'))
+        if not os.path.exists(path):
+            if self.auto_create_folder:
+                os.makedirs(path)
+            else:
+                Logger.warning(f"{self} {path} path not exists")
+                return
+        if not os.path.isdir(path):
+            Logger.warning(f"{self} {path} not is a dir")
+            return
+        with open(file, self.mode, encoding=self.encoding, newline=self.newline) as f:
+            f.write(str(item))

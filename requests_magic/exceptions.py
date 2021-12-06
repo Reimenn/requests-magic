@@ -1,18 +1,35 @@
+"""
+requests magic 用到的异常们
+"""
+
+
 class MagicError(Exception):
     """
-    requests magic base error
+    requests magic 的基础异常类型
     """
     pass
 
+
 class SchedulerError(MagicError):
+    """
+    调度器异常类型
+    """
     pass
+
 
 class RequestError(MagicError):
     """
-    downloader error, to abandon request
+    请求错误的基础异常类型，记录了犯错的请求
     """
 
     def __init__(self, request):
+        """
+        请求错误的基础异常类型，记录了犯错的请求
+        Parameters
+        ----------
+        request
+            犯错的请求
+        """
         self.request = request
 
     def __str__(self) -> str:
@@ -21,24 +38,33 @@ class RequestError(MagicError):
 
 class RequestCanRetryError(RequestError):
     """
-    Raise this error in the downloader will automatically re-download
+    这个异常会让请求无条件重试
     """
     pass
 
 
 class RequestTimeoutError(RequestCanRetryError):
     """
-    Timeout error, auto re-download when request time_out_retry > 0
+    请求超时异常，这会让请求根据超时设置决定是否要等待一定时间后重试
     """
     pass
 
 
 class RequestHttpError(RequestError):
     """
-    Other errors, to abandon request
+    Http错误，这里记录了 Http 状态码
     """
 
     def __init__(self, request, code: int):
+        """
+        Http错误，这里记录了 Http 状态码
+        Parameters
+        ----------
+        request
+            犯错的请求
+        code
+            得到的状态码，这里应该不会出现 200
+        """
         super(RequestHttpError, self).__init__(request)
         self.code = code
 
