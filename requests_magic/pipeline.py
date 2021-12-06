@@ -1,5 +1,4 @@
-"""
-管道基类和内置的管道
+"""管道基类和内置的管道
 """
 
 import os
@@ -8,36 +7,31 @@ from .logger import Logger
 
 
 class Pipeline(threading.Thread):
+    """管道基类，用来持久化数据，这是一个新线程
     """
-    管道基类，用来持久化数据，这是一个新线程
-    """
+
     def __init__(self, name: str = ""):
-        """
-        管道基类，用来持久化数据，这是一个新线程
-        不要实例化这个类，应该继承Pipeline实现你自己的持久化
-        Parameters
-        ----------
-        name
-            管道的名字，希望能帮助 debug
+        """管道基类，用来持久化数据，这是一个新线程
+
+        Args:
+            name: 管道的名字，希望能帮助 debug
+        Warnings:
+            不要实例化这个类，应该继承Pipeline实现你自己的持久化
         """
         super().__init__()
         self.name = name
         self.items = []
 
-
     def add_item(self, item):
-        """
-        添加新的需要持久化的数据
-        Parameters
-        ----------
-        item
-            要持久化的数据
+        """ 添加新的需要持久化的数据
+
+        Args:
+            item:要持久化的数据
         """
         self.items.append(item)
 
     def run(self) -> None:
-        """
-        开启线程，反复监听待保存的 item
+        """ 开启线程，反复监听待保存的 item
         """
         while True:
             if self.items:
@@ -51,27 +45,26 @@ class Pipeline(threading.Thread):
                     raise e
 
     def acceptable(self, item) -> bool:
-        """
-        判断是否可以接收某个 item，调度器会根据这里的返回值判断是否继续用这个管道保存这个item
-        这是一个被好多线程调用的方法
-        Parameters
-        ----------
-        item
-            被判断的item
-        Returns
-        -------
+        """ 判断是否可以接收某个 item。
+        调度器会根据这里的返回值判断是否继续用这个管道保存这个item，
+
+        Args:
+            item: 被判断的item
+        Returns:
             能否接收
+        Warnings:
+            这是一个会被好多线程调用的方法。
         """
         return True
 
     def save(self, item):
-        """
-        真正的持久化方法，在这里保存数据几个
-        这是一个被自身线程调用的方法
-        Parameters
-        ----------
-        item
-            需要持久化的数据
+        """真正的持久化方法，在这里保存数据
+
+        Args:
+            item: 需要持久化的数据
+
+        Warnings:
+            这是一个被自身线程调用的方法
         """
         pass
 
@@ -83,6 +76,7 @@ class SimpleConsolePipeline(Pipeline):
     """
     简单的控制台管道，直接把item转换成字符串并显示在控制台上
     """
+
     def save(self, item):
         print(str(item))
 
@@ -91,6 +85,7 @@ class SimpleFilePipeline(Pipeline):
     """
     简单的文件持久化管道
     """
+
     def __init__(self, name: str = "SimpleFilePipeline",
                  output_file_tag_key: str = 'file',
                  mode: str = 'a',

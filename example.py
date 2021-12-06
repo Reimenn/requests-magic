@@ -1,19 +1,19 @@
-import requests_magic
+import requests_magic as rm
 
 
-class TestSpider(requests_magic.Spider):
+class TestSpider(rm.Spider):
     def start(self):
-        return self.request("https://www.runoob.com/html/html-tutorial.html")
+        return rm.Request("https://www.runoob.com/html/html-tutorial.html", callback=self.parse)
 
     def parse(self, result, request):
         text = result.text
-        yield self.item({'content': text})
+        yield rm.Item({'content': text})
 
 
-class TestPipeline(requests_magic.Pipeline):
+class TestPipeline(rm.Pipeline):
     def save(self, item):
         print(item)
         pass
 
 
-requests_magic.quick_start(TestSpider(), TestPipeline())
+rm.quick_start(TestSpider(), TestPipeline())

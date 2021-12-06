@@ -1,5 +1,7 @@
-"""
-请求类和请求线程类
+"""请求类和请求线程类
+
+Attributes:
+    default_headers (dict): 当请求没有指定 headers 时，会从这里copy一份，默认是空的。
 """
 
 from typing import Callable
@@ -13,8 +15,7 @@ default_headers: dict = {}
 
 
 class Request:
-    """
-    表示一个请求，这里会自动创建 RequestThread
+    """表示一个请求，这里会自动创建 RequestThread
     """
 
     def __init__(self, url: str, callback: Callable,
@@ -26,38 +27,23 @@ class Request:
                  preparse: Callable = None,
                  name: str = '',
                  **kwargs):
-        """
-        表示一个请求，这里会自动创建 RequestThread
-        Parameters
-        ----------
-        url
-            请求的目标地址
-        callback
-            回调解析函数，这必须是爬虫类中的方法
-        data
-            请求数据
-        method
-            请求方法，默认：GET
-        headers
-            请求头，如果为空，则从 requests_magic.request.default_headers copy一份
-        time_out
-            超时时限，默认：10秒
-        time_out_wait
-            超时后重试前的等待时间，默认：15秒
-        time_out_retry
-            超时重试次数，默认：3次
-        tags
-            标签，用来记录一些额外内容，可以用来在解析函数、下载中间件等东西之间传递信息
-        downloader
-            下载器，这个方法需要有一个参数表示 Request 并返回请求结果，默认使用基于 requests 实现
-        downloader_filter
-            下载过滤器，这个方法需要有两个参数分别表示 请求结果 和 Request，默认使用基于 requests 实现
-        preparse
-            预解析器，默认使用解析函数所在爬虫类的 parparse 方法
-        name
-            请求的名字，希望能帮助 debug
-        kwargs
-            直接记录在自己的 kwargs 属性上，默认的 requests 下载器会把这里的值添加到 requests.request 方法的参数上
+        """表示一个请求，这里会自动创建 RequestThread
+
+        Args:
+            url: 请求的目标地址
+            callback: 回调解析函数，这必须是爬虫类中的方法
+            data: 请求数据
+            method: 请求方法，默认：GET
+            headers: 请求头，如果为空，则从 requests_magic.request.default_headers copy一份
+            time_out: 超时时限，默认：10秒
+            time_out_wait: 超时后重试前的等待时间，默认：15秒
+            time_out_retry: 超时重试次数，默认：3次
+            tags: 标签，用来记录一些额外内容，可以用来在解析函数、下载中间件等东西之间传递信息
+            downloader: 下载器，这个方法需要有一个参数表示 Request 并返回请求结果，默认使用基于 requests 实现
+            downloader_filter: 下载过滤器，这个方法需要有两个参数分别表示 请求结果 和 Request，默认使用基于 requests 实现
+            preparse: 预解析器，默认使用解析函数所在爬虫类的 parparse 方法
+            name: 请求的名字，希望能帮助 debug
+            kwargs: 直接记录在自己的 kwargs 属性上，默认的 requests 下载器会把这里的值添加到 requests.request 方法的参数上
         """
         super().__init__()
 
@@ -106,8 +92,7 @@ class Request:
         return f"[Request - {self.name}]" if self.name else ''
 
     def start(self):
-        """
-        开始下载，自动创建 RequestThread，下载完成后会自动调用调度器的方法
+        """开始下载，自动创建 RequestThread，下载完成后会自动调用调度器的方法
         """
         if self.thread:
             Logger.error(f"{self} downloading, dont start")
@@ -115,19 +100,17 @@ class Request:
         self.thread.start()
 
     def md5(self) -> str:
-        """
-        根据某些属性计算自己的md5，用于url去重，默认时使用 请求方法、url、data、time_out_retry 按照 utf-8 编码计算
-        Returns
-        -------
-        md5字符串
+        """根据某些属性计算自己的md5，
+        用于url去重，默认时使用 请求方法、url、data、time_out_retry 按照 utf-8 编码计算
+        Returns:
+            md5字符串
         """
         return hashlib.md5(
             f'{self.method};{self.url};{self.data};{self.time_out_retry}'.encode('utf-8')
         ).hexdigest()
 
     def retry(self) -> None:
-        """
-        重新请求
+        """重新请求
         """
         if not self.scheduler:
             Logger.error(f'{self} Requests that have not been requested cannot be retry')
@@ -139,46 +122,39 @@ class Request:
         self.scheduler.downloader_retry(self)
 
     def abandon(self) -> None:
-        """
-        放弃请求
+        """放弃请求
         """
         self.stop_thread()
         self.scheduler.downloader_abandon(self)
 
     def finish(self) -> None:
-        """
-        完成请求
+        """完成请求
         """
         self.stop_thread()
-        self.scheduler.downloader_finish(self)
+        self.scheduler.downloader_finish(self.result,self)
 
     def stop_thread(self) -> None:
-        """
-        终止请求线程
+        """终止请求线程
         """
         del self.thread
         self.thread = None
 
 
 class RequestThread(threading.Thread):
-    """
-    请求的下载线程
+    """请求的下载线程
     """
 
     def __init__(self, request: Request):
-        """
-        请求的下载线程
-        Parameters
-        ----------
-        request
-            请求本地
+        """请求的下载线程
+
+        Args:
+            request: 请求
         """
         super(RequestThread, self).__init__()
         self.request = request
 
     def run(self) -> None:
-        """
-        开始下载
+        """开始下载
         """
         self.request.result = None
         self.call_downloader()
@@ -189,8 +165,7 @@ class RequestThread(threading.Thread):
         self.request.finish()
 
     def call_downloader(self) -> None:
-        """
-        调用下载器并纪录结果到 Request，可能会触发重试、放弃等操作
+        """调用下载器并纪录结果到 Request，可能会触发重试、放弃等操作
         """
         try:
             Logger.info(
@@ -205,8 +180,7 @@ class RequestThread(threading.Thread):
             self.parse_downloader_exception(e)
 
     def parse_downloader_exception(self, e: Exception) -> None:
-        """
-        解析调用下载器时得到的错误，用来判断是否要重试、放弃等
+        """解析调用下载器时得到的错误，用来判断是否要重试、放弃等
         """
         retry = False
 

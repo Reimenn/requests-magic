@@ -9,24 +9,18 @@ import time
 
 
 class Scheduler(threading.Thread):
-    """
-    调度器，核心组件，负责请求管理与 item 转发
+    """调度器，核心组件，负责请求管理与 item 转发
     """
 
     def __init__(self, pipelines: Union[Pipeline, List[Pipeline]], max_link: int = 12,
                  request_interval: float = 0, distinct: bool = True):
-        """
-        调度器，核心组件，负责请求管理与 item 转发
-        Parameters
-        ----------
-        pipelines
-            管道们
-        max_link
-            最大连接数，默认：12
-        request_interval
-            请求间隔时间，默认：0秒
-        distinct
-            是否开启去重，默认开启
+        """调度器，核心组件，负责请求管理与 item 转发
+
+        Args:
+            pipelines: 管道们
+            max_link: 最大连接数，默认：12
+            request_interval: 请求间隔时间，默认：0秒
+            distinct: 是否开启去重，默认开启
         """
         super().__init__()
         self.distinct = distinct
@@ -46,12 +40,10 @@ class Scheduler(threading.Thread):
                 pl.start()
 
     def add_request(self, request: Request) -> None:
-        """
-        添加一个新的请求（不会立刻执行）
-        Parameters
-        ----------
-        request
-            请求
+        """添加一个新的请求到请求队列（不会立刻执行）
+
+        Args:
+            request: 请求
         """
         Logger.debug(f"Add new request {request}, list requests len:{len(self.requests)}")
         md5: str = request.md5()
@@ -63,14 +55,11 @@ class Scheduler(threading.Thread):
         self.requests_md5.append(md5)
 
     def add_item(self, item: Item, from_spider=None) -> None:
-        """
-        添加一个新的 Item，这会转发给每个管道
-        Parameters
-        ----------
-        item
-            Item
-        from_spider
-            产生这个 Item 的爬虫，可以为空，空了也没啥问题
+        """ 添加一个新的 Item，这会转发给每个管道
+
+        Args:
+            item: Item
+            from_spider: 产生这个 Item 的爬虫，可以为空，空了也没啥问题
         """
         Logger.debug(f"Add new item {item}")
         item.scheduler = self
@@ -80,14 +69,11 @@ class Scheduler(threading.Thread):
                 pl.add_item(item)
 
     def add_callback_result(self, result_ite, from_spider=None) -> None:
-        """
-        自动解析解析函数返回的结果，会自动迭代、添加请求或转发 Item
-        Parameters
-        ----------
-        result_ite
-            结果
-        from_spider
-            产生结果的爬虫
+        """自动解析解析函数返回的结果，会自动迭代、添加请求或转发 Item
+
+        Args
+            result_ite: 结果
+            from_spider: 产生结果的爬虫
         """
         if result_ite is None:
             return
@@ -104,8 +90,7 @@ class Scheduler(threading.Thread):
                     f"Please do not generate it in spider methods.")
 
     def run(self) -> None:
-        """
-        开始处理请求队列
+        """开始处理请求队列
         """
         while True:
             try:
@@ -121,8 +106,7 @@ class Scheduler(threading.Thread):
                 Logger.error(e)
 
     def downloader_finish(self, result, request: Request) -> None:
-        """
-        当下载完成时，由 Request 调用。
+        """当下载完成时，由 Request 调用。
         这会在请求队列中移除这个请求并自动调用解析函数
         """
         Logger.debug(f"Over a request {request}")
@@ -135,8 +119,7 @@ class Scheduler(threading.Thread):
         self.add_callback_result(call, request.spider)
 
     def downloader_abandon(self, request: Request) -> None:
-        """
-        放弃一个请求
+        """放弃一个请求
         """
         Logger.debug(f"Abandon a request {request}")
         if request not in self.link_requests:
@@ -145,8 +128,7 @@ class Scheduler(threading.Thread):
         self.link_requests.remove(request)
 
     def downloader_retry(self, request: Request) -> None:
-        """
-        重试一个请求
+        """重试一个请求
         """
         if request not in self.link_requests:
             Logger.error(f"The retry download is not in link_request list. {request}")

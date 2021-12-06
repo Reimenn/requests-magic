@@ -1,18 +1,14 @@
-"""
-工具模块
+"""工具模块
 """
 
 
 def request_to_requests_kwargs(request) -> dict:
-    """
-    根据 Request 生成 requests.request 会用到的参数字典
-    Parameters
-    ----------
-    request
-        请求
-    Returns
-    -------
-    参数字典
+    """根据 Request 生成 requests.request 会用到的参数字典
+
+    Args:
+        request: 请求
+    Returns:
+        参数字典
     """
     result: dict = {
         'method': request.method,

@@ -8,22 +8,21 @@ class Spider:
         self.name = name
 
     def start(self):
-        """
-        爬虫的起点，这里可以用 return或yield 返回 Request或Item
+        """爬虫的起点，这里可以用 return或yield 返回 Request或Item
         """
         pass
 
     def parse(self, result: requests.Response, request: Request):
-        """
-        解析函数的例子，其实并没有人会调用这个函数
-        解析函数会被好多线程执行
+        """解析函数的例子，其实并没有人会调用这个函数
+        Warnings:
+            解析函数会被好多线程执行
         """
         pass
 
     def preparse(self, result: requests.Response, request: Request) -> requests.Response:
-        """
-        预解析函数
-        预解析函数会被好多线程执行
+        """默认的预解析函数
+        Warnings:
+            预解析函数会被好多线程执行
         """
         return result
 

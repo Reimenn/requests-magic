@@ -1,0 +1,584 @@
+
+<!DOCTYPE html>
+
+<html lang="zh_CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>requests_magic package &#8212; requests-magic  文档</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/pyramid.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/translations.js"></script>
+    <link rel="index" title="索引" href="genindex.html" />
+    <link rel="search" title="搜索" href="search.html" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<!--[if lte IE 6]>
+<link rel="stylesheet" href="_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
+<![endif]-->
+
+  </head><body>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>导航</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="总目录"
+             accesskey="I">索引</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python 模块索引"
+             >模块</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">requests-magic  文档</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">requests_magic package</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="requests-magic-package">
+<h1>requests_magic package<a class="headerlink" href="#requests-magic-package" title="永久链接至标题">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="永久链接至标题">¶</a></h2>
+</section>
+<section id="module-requests_magic.exceptions">
+<span id="requests-magic-exceptions-module"></span><h2>requests_magic.exceptions module<a class="headerlink" href="#module-requests_magic.exceptions" title="永久链接至标题">¶</a></h2>
+<p>requests magic 用到的异常们</p>
+<dl class="py exception">
+<dt class="sig sig-object py" id="requests_magic.exceptions.MagicError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">requests_magic.exceptions.</span></span><span class="sig-name descname"><span class="pre">MagicError</span></span><a class="headerlink" href="#requests_magic.exceptions.MagicError" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>requests magic 的基础异常类型</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="requests_magic.exceptions.RequestCanRetryError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">requests_magic.exceptions.</span></span><span class="sig-name descname"><span class="pre">RequestCanRetryError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.exceptions.RequestCanRetryError" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<a class="reference internal" href="#requests_magic.exceptions.RequestError" title="requests_magic.exceptions.RequestError"><code class="xref py py-class docutils literal notranslate"><span class="pre">requests_magic.exceptions.RequestError</span></code></a></p>
+<p>这个异常会让请求无条件重试</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="requests_magic.exceptions.RequestError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">requests_magic.exceptions.</span></span><span class="sig-name descname"><span class="pre">RequestError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.exceptions.RequestError" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<a class="reference internal" href="#requests_magic.exceptions.MagicError" title="requests_magic.exceptions.MagicError"><code class="xref py py-class docutils literal notranslate"><span class="pre">requests_magic.exceptions.MagicError</span></code></a></p>
+<p>请求错误的基础异常类型，记录了犯错的请求</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="requests_magic.exceptions.RequestHttpError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">requests_magic.exceptions.</span></span><span class="sig-name descname"><span class="pre">RequestHttpError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">code</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.exceptions.RequestHttpError" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<a class="reference internal" href="#requests_magic.exceptions.RequestError" title="requests_magic.exceptions.RequestError"><code class="xref py py-class docutils literal notranslate"><span class="pre">requests_magic.exceptions.RequestError</span></code></a></p>
+<p>Http错误，这里记录了 Http 状态码</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="requests_magic.exceptions.RequestTimeoutError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">requests_magic.exceptions.</span></span><span class="sig-name descname"><span class="pre">RequestTimeoutError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.exceptions.RequestTimeoutError" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<a class="reference internal" href="#requests_magic.exceptions.RequestCanRetryError" title="requests_magic.exceptions.RequestCanRetryError"><code class="xref py py-class docutils literal notranslate"><span class="pre">requests_magic.exceptions.RequestCanRetryError</span></code></a></p>
+<p>请求超时异常，这会让请求根据超时设置决定是否要等待一定时间后重试</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="requests_magic.exceptions.SchedulerError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">requests_magic.exceptions.</span></span><span class="sig-name descname"><span class="pre">SchedulerError</span></span><a class="headerlink" href="#requests_magic.exceptions.SchedulerError" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<a class="reference internal" href="#requests_magic.exceptions.MagicError" title="requests_magic.exceptions.MagicError"><code class="xref py py-class docutils literal notranslate"><span class="pre">requests_magic.exceptions.MagicError</span></code></a></p>
+<p>调度器异常类型</p>
+</dd></dl>
+
+</section>
+<section id="module-requests_magic.item">
+<span id="requests-magic-item-module"></span><h2>requests_magic.item module<a class="headerlink" href="#module-requests_magic.item" title="永久链接至标题">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="requests_magic.item.Item">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">requests_magic.item.</span></span><span class="sig-name descname"><span class="pre">Item</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.item.Item" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+<p>表示需要持久化的数据，本质上是个字典</p>
+</dd></dl>
+
+</section>
+<section id="module-requests_magic.logger">
+<span id="requests-magic-logger-module"></span><h2>requests_magic.logger module<a class="headerlink" href="#module-requests_magic.logger" title="永久链接至标题">¶</a></h2>
+<p>requests magic 的日志模块，可以在这里设置日志等级</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="requests_magic.logger.LoggerLevel">
+<span class="sig-prename descclassname"><span class="pre">requests_magic.logger.</span></span><span class="sig-name descname"><span class="pre">LoggerLevel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.logger.LoggerLevel" title="永久链接至目标">¶</a></dt>
+<dd><p>给你的爬虫项目设置一下日志等级</p>
+<dl class="field-list simple">
+<dt class="field-odd">参数</dt>
+<dd class="field-odd"><p><strong>level</strong> – 等级，参考内置模块 logging</p>
+</dd>
+</dl>
+<p class="rubric">实际案例</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">requests_magic</span> <span class="k">as</span> <span class="nn">rm</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rm</span><span class="o">.</span><span class="n">LoggerLevel</span><span class="p">(</span><span class="s1">&#39;WARNING&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+<section id="module-requests_magic.middleware">
+<span id="requests-magic-middleware-module"></span><h2>requests_magic.middleware module<a class="headerlink" href="#module-requests_magic.middleware" title="永久链接至标题">¶</a></h2>
+<p>下载中间件们</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="requests_magic.middleware.requests_downloader">
+<span class="sig-prename descclassname"><span class="pre">requests_magic.middleware.</span></span><span class="sig-name descname"><span class="pre">requests_downloader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">requests.models.Response</span></span></span><a class="headerlink" href="#requests_magic.middleware.requests_downloader" title="永久链接至目标">¶</a></dt>
+<dd><p>这是默认的下载中间件，基于 requests</p>
+<dl class="field-list simple">
+<dt class="field-odd">参数</dt>
+<dd class="field-odd"><p><strong>request</strong> – 请求</p>
+</dd>
+<dt class="field-even">引发</dt>
+<dd class="field-even"><p><a class="reference internal" href="#requests_magic.exceptions.RequestTimeoutError" title="requests_magic.exceptions.RequestTimeoutError"><strong>RequestTimeoutError</strong></a> – 请求超时，这会尝试重试请求</p>
+</dd>
+<dt class="field-odd">返回</dt>
+<dd class="field-odd"><p>下载的最终结果</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="requests_magic.middleware.requests_downloader_filter">
+<span class="sig-prename descclassname"><span class="pre">requests_magic.middleware.</span></span><span class="sig-name descname"><span class="pre">requests_downloader_filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">requests.models.Response</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.middleware.requests_downloader_filter" title="永久链接至目标">¶</a></dt>
+<dd><p>默认的请求过滤器。
+基于 requests，用来过滤下载完成后的结果，没有返回值，但可能抛出各种异常</p>
+<dl class="field-list simple">
+<dt class="field-odd">参数</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>response</strong> – 下载好的结果</p></li>
+<li><p><strong>request</strong> – 请求</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-requests_magic.pipeline">
+<span id="requests-magic-pipeline-module"></span><h2>requests_magic.pipeline module<a class="headerlink" href="#module-requests_magic.pipeline" title="永久链接至标题">¶</a></h2>
+<p>管道基类和内置的管道</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="requests_magic.pipeline.Pipeline">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">requests_magic.pipeline.</span></span><span class="sig-name descname"><span class="pre">Pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.pipeline.Pipeline" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">threading.Thread</span></code></p>
+<p>管道基类，用来持久化数据，这是一个新线程</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.pipeline.Pipeline.acceptable">
+<span class="sig-name descname"><span class="pre">acceptable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#requests_magic.pipeline.Pipeline.acceptable" title="永久链接至目标">¶</a></dt>
+<dd><p>判断是否可以接收某个 item。
+调度器会根据这里的返回值判断是否继续用这个管道保存这个item，</p>
+<dl class="field-list simple">
+<dt class="field-odd">参数</dt>
+<dd class="field-odd"><p><strong>item</strong> – 被判断的item</p>
+</dd>
+<dt class="field-even">返回</dt>
+<dd class="field-even"><p>能否接收</p>
+</dd>
+</dl>
+<div class="admonition warning">
+<p class="admonition-title">警告</p>
+<p>这是一个会被好多线程调用的方法。</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.pipeline.Pipeline.add_item">
+<span class="sig-name descname"><span class="pre">add_item</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.pipeline.Pipeline.add_item" title="永久链接至目标">¶</a></dt>
+<dd><p>添加新的需要持久化的数据</p>
+<dl class="field-list simple">
+<dt class="field-odd">参数</dt>
+<dd class="field-odd"><p><strong>item</strong> – 要持久化的数据</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.pipeline.Pipeline.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.pipeline.Pipeline.run" title="永久链接至目标">¶</a></dt>
+<dd><p>开启线程，反复监听待保存的 item</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.pipeline.Pipeline.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.pipeline.Pipeline.save" title="永久链接至目标">¶</a></dt>
+<dd><p>真正的持久化方法，在这里保存数据</p>
+<dl class="field-list simple">
+<dt class="field-odd">参数</dt>
+<dd class="field-odd"><p><strong>item</strong> – 需要持久化的数据</p>
+</dd>
+</dl>
+<div class="admonition warning">
+<p class="admonition-title">警告</p>
+<p>这是一个被自身线程调用的方法</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="requests_magic.pipeline.SimpleConsolePipeline">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">requests_magic.pipeline.</span></span><span class="sig-name descname"><span class="pre">SimpleConsolePipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.pipeline.SimpleConsolePipeline" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<a class="reference internal" href="#requests_magic.pipeline.Pipeline" title="requests_magic.pipeline.Pipeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">requests_magic.pipeline.Pipeline</span></code></a></p>
+<p>简单的控制台管道，直接把item转换成字符串并显示在控制台上</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.pipeline.SimpleConsolePipeline.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.pipeline.SimpleConsolePipeline.save" title="永久链接至目标">¶</a></dt>
+<dd><p>真正的持久化方法，在这里保存数据</p>
+<dl class="field-list simple">
+<dt class="field-odd">参数</dt>
+<dd class="field-odd"><p><strong>item</strong> – 需要持久化的数据</p>
+</dd>
+</dl>
+<div class="admonition warning">
+<p class="admonition-title">警告</p>
+<p>这是一个被自身线程调用的方法</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="requests_magic.pipeline.SimpleFilePipeline">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">requests_magic.pipeline.</span></span><span class="sig-name descname"><span class="pre">SimpleFilePipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'SimpleFilePipeline'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_file_tag_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'file'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'a'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_create_folder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'utf-8'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">newline</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'\n'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.pipeline.SimpleFilePipeline" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<a class="reference internal" href="#requests_magic.pipeline.Pipeline" title="requests_magic.pipeline.Pipeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">requests_magic.pipeline.Pipeline</span></code></a></p>
+<p>简单的文件持久化管道</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.pipeline.SimpleFilePipeline.acceptable">
+<span class="sig-name descname"><span class="pre">acceptable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#requests_magic.pipeline.SimpleFilePipeline.acceptable" title="永久链接至目标">¶</a></dt>
+<dd><p>判断 output_file_tag_key 是否存在以及值是否是字符串
+这是会被好多线程调用的方法</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.pipeline.SimpleFilePipeline.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.pipeline.SimpleFilePipeline.save" title="永久链接至目标">¶</a></dt>
+<dd><p>作为文件保存item
+这是执行在管道自身线程上的方法</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-requests_magic.request">
+<span id="requests-magic-request-module"></span><h2>requests_magic.request module<a class="headerlink" href="#module-requests_magic.request" title="永久链接至标题">¶</a></h2>
+<p>请求类和请求线程类</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="requests_magic.request.default_headers">
+<span class="sig-prename descclassname"><span class="pre">requests_magic.request.</span></span><span class="sig-name descname"><span class="pre">default_headers</span></span><a class="headerlink" href="#requests_magic.request.default_headers" title="永久链接至目标">¶</a></dt>
+<dd><p>当请求没有指定 headers 时，会从这里copy一份，默认是空的。</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="requests_magic.request.Request">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">requests_magic.request.</span></span><span class="sig-name descname"><span class="pre">Request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">callback:</span> <span class="pre">Callable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data:</span> <span class="pre">Optional[dict]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'GET'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">headers:</span> <span class="pre">Optional[dict]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_out:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_out_wait:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_out_retry:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags:</span> <span class="pre">Optional[dict]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downloader:</span> <span class="pre">Callable</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">requests_downloader&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downloader_filter:</span> <span class="pre">Callable</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">requests_downloader_filter&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preparse:</span> <span class="pre">Optional[Callable]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.request.Request" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>表示一个请求，这里会自动创建 RequestThread</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.request.Request.abandon">
+<span class="sig-name descname"><span class="pre">abandon</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.request.Request.abandon" title="永久链接至目标">¶</a></dt>
+<dd><p>放弃请求</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.request.Request.finish">
+<span class="sig-name descname"><span class="pre">finish</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.request.Request.finish" title="永久链接至目标">¶</a></dt>
+<dd><p>完成请求</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.request.Request.md5">
+<span class="sig-name descname"><span class="pre">md5</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#requests_magic.request.Request.md5" title="永久链接至目标">¶</a></dt>
+<dd><p>根据某些属性计算自己的md5，
+用于url去重，默认时使用 请求方法、url、data、time_out_retry 按照 utf-8 编码计算
+:returns: md5字符串</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.request.Request.retry">
+<span class="sig-name descname"><span class="pre">retry</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.request.Request.retry" title="永久链接至目标">¶</a></dt>
+<dd><p>重新请求</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.request.Request.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.request.Request.start" title="永久链接至目标">¶</a></dt>
+<dd><p>开始下载，自动创建 RequestThread，下载完成后会自动调用调度器的方法</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.request.Request.stop_thread">
+<span class="sig-name descname"><span class="pre">stop_thread</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.request.Request.stop_thread" title="永久链接至目标">¶</a></dt>
+<dd><p>终止请求线程</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="requests_magic.request.RequestThread">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">requests_magic.request.</span></span><span class="sig-name descname"><span class="pre">RequestThread</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#requests_magic.request.Request" title="requests_magic.request.Request"><span class="pre">requests_magic.request.Request</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.request.RequestThread" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">threading.Thread</span></code></p>
+<p>请求的下载线程</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.request.RequestThread.call_downloader">
+<span class="sig-name descname"><span class="pre">call_downloader</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.request.RequestThread.call_downloader" title="永久链接至目标">¶</a></dt>
+<dd><p>调用下载器并纪录结果到 Request，可能会触发重试、放弃等操作</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.request.RequestThread.parse_downloader_exception">
+<span class="sig-name descname"><span class="pre">parse_downloader_exception</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">e</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Exception</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.request.RequestThread.parse_downloader_exception" title="永久链接至目标">¶</a></dt>
+<dd><p>解析调用下载器时得到的错误，用来判断是否要重试、放弃等</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.request.RequestThread.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.request.RequestThread.run" title="永久链接至目标">¶</a></dt>
+<dd><p>开始下载</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-requests_magic.scheduler">
+<span id="requests-magic-scheduler-module"></span><h2>requests_magic.scheduler module<a class="headerlink" href="#module-requests_magic.scheduler" title="永久链接至标题">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="requests_magic.scheduler.Scheduler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">requests_magic.scheduler.</span></span><span class="sig-name descname"><span class="pre">Scheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipelines</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#requests_magic.pipeline.Pipeline" title="requests_magic.pipeline.Pipeline"><span class="pre">requests_magic.pipeline.Pipeline</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#requests_magic.pipeline.Pipeline" title="requests_magic.pipeline.Pipeline"><span class="pre">requests_magic.pipeline.Pipeline</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_link</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request_interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distinct</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.scheduler.Scheduler" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">threading.Thread</span></code></p>
+<p>调度器，核心组件，负责请求管理与 item 转发</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.scheduler.Scheduler.add_callback_result">
+<span class="sig-name descname"><span class="pre">add_callback_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result_ite</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_spider</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.scheduler.Scheduler.add_callback_result" title="永久链接至目标">¶</a></dt>
+<dd><p>自动解析解析函数返回的结果，会自动迭代、添加请求或转发 Item</p>
+<dl class="simple">
+<dt>Args</dt><dd><p>result_ite: 结果
+from_spider: 产生结果的爬虫</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.scheduler.Scheduler.add_item">
+<span class="sig-name descname"><span class="pre">add_item</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#requests_magic.item.Item" title="requests_magic.item.Item"><span class="pre">requests_magic.item.Item</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_spider</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.scheduler.Scheduler.add_item" title="永久链接至目标">¶</a></dt>
+<dd><p>添加一个新的 Item，这会转发给每个管道</p>
+<dl class="field-list simple">
+<dt class="field-odd">参数</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item</strong> – Item</p></li>
+<li><p><strong>from_spider</strong> – 产生这个 Item 的爬虫，可以为空，空了也没啥问题</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.scheduler.Scheduler.add_request">
+<span class="sig-name descname"><span class="pre">add_request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#requests_magic.request.Request" title="requests_magic.request.Request"><span class="pre">requests_magic.request.Request</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.scheduler.Scheduler.add_request" title="永久链接至目标">¶</a></dt>
+<dd><p>添加一个新的请求到请求队列（不会立刻执行）</p>
+<dl class="field-list simple">
+<dt class="field-odd">参数</dt>
+<dd class="field-odd"><p><strong>request</strong> – 请求</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.scheduler.Scheduler.downloader_abandon">
+<span class="sig-name descname"><span class="pre">downloader_abandon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#requests_magic.request.Request" title="requests_magic.request.Request"><span class="pre">requests_magic.request.Request</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.scheduler.Scheduler.downloader_abandon" title="永久链接至目标">¶</a></dt>
+<dd><p>放弃一个请求</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.scheduler.Scheduler.downloader_finish">
+<span class="sig-name descname"><span class="pre">downloader_finish</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#requests_magic.request.Request" title="requests_magic.request.Request"><span class="pre">requests_magic.request.Request</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.scheduler.Scheduler.downloader_finish" title="永久链接至目标">¶</a></dt>
+<dd><p>当下载完成时，由 Request 调用。
+这会在请求队列中移除这个请求并自动调用解析函数</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.scheduler.Scheduler.downloader_retry">
+<span class="sig-name descname"><span class="pre">downloader_retry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#requests_magic.request.Request" title="requests_magic.request.Request"><span class="pre">requests_magic.request.Request</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.scheduler.Scheduler.downloader_retry" title="永久链接至目标">¶</a></dt>
+<dd><p>重试一个请求</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.scheduler.Scheduler.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#requests_magic.scheduler.Scheduler.run" title="永久链接至目标">¶</a></dt>
+<dd><p>开始处理请求队列</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-requests_magic.spider">
+<span id="requests-magic-spider-module"></span><h2>requests_magic.spider module<a class="headerlink" href="#module-requests_magic.spider" title="永久链接至标题">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="requests_magic.spider.Spider">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">requests_magic.spider.</span></span><span class="sig-name descname"><span class="pre">Spider</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.spider.Spider" title="永久链接至目标">¶</a></dt>
+<dd><p>基类：<code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.spider.Spider.parse">
+<span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">requests.models.Response</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#requests_magic.request.Request" title="requests_magic.request.Request"><span class="pre">requests_magic.request.Request</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.spider.Spider.parse" title="永久链接至目标">¶</a></dt>
+<dd><p>解析函数的例子，其实并没有人会调用这个函数
+.. warning:: 解析函数会被好多线程执行</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.spider.Spider.preparse">
+<span class="sig-name descname"><span class="pre">preparse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">requests.models.Response</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#requests_magic.request.Request" title="requests_magic.request.Request"><span class="pre">requests_magic.request.Request</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">requests.models.Response</span></span></span><a class="headerlink" href="#requests_magic.spider.Spider.preparse" title="永久链接至目标">¶</a></dt>
+<dd><p>默认的预解析函数
+.. warning:: 预解析函数会被好多线程执行</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="requests_magic.spider.Spider.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#requests_magic.spider.Spider.start" title="永久链接至目标">¶</a></dt>
+<dd><p>爬虫的起点，这里可以用 return或yield 返回 Request或Item</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-requests_magic.utils">
+<span id="requests-magic-utils-module"></span><h2>requests_magic.utils module<a class="headerlink" href="#module-requests_magic.utils" title="永久链接至标题">¶</a></h2>
+<p>工具模块</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="requests_magic.utils.request_to_requests_kwargs">
+<span class="sig-prename descclassname"><span class="pre">requests_magic.utils.</span></span><span class="sig-name descname"><span class="pre">request_to_requests_kwargs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#requests_magic.utils.request_to_requests_kwargs" title="永久链接至目标">¶</a></dt>
+<dd><p>根据 Request 生成 requests.request 会用到的参数字典</p>
+<dl class="field-list simple">
+<dt class="field-odd">参数</dt>
+<dd class="field-odd"><p><strong>request</strong> – 请求</p>
+</dd>
+<dt class="field-even">返回</dt>
+<dd class="field-even"><p>参数字典</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-requests_magic">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-requests_magic" title="永久链接至标题">¶</a></h2>
+<p>requests magic</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="requests_magic.quick_start">
+<span class="sig-prename descclassname"><span class="pre">requests_magic.</span></span><span class="sig-name descname"><span class="pre">quick_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spiders</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#requests_magic.spider.Spider" title="requests_magic.spider.Spider"><span class="pre">requests_magic.spider.Spider</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#requests_magic.spider.Spider" title="requests_magic.spider.Spider"><span class="pre">requests_magic.spider.Spider</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pipelines</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#requests_magic.pipeline.Pipeline" title="requests_magic.pipeline.Pipeline"><span class="pre">requests_magic.pipeline.Pipeline</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#requests_magic.pipeline.Pipeline" title="requests_magic.pipeline.Pipeline"><span class="pre">requests_magic.pipeline.Pipeline</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_link</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request_interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wait</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#requests_magic.scheduler.Scheduler" title="requests_magic.scheduler.Scheduler"><span class="pre">requests_magic.scheduler.Scheduler</span></a></span></span><a class="headerlink" href="#requests_magic.quick_start" title="永久链接至目标">¶</a></dt>
+<dd><p>快速开始爬虫，将自动配置调度器</p>
+<dl class="field-list simple">
+<dt class="field-odd">参数</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spiders</strong> – 这是你的爬虫，可以只有一个，也可以是一个列表。这将自动执行这些爬虫的 start 方法，并将结果发送给调度器。</p></li>
+<li><p><strong>pipelines</strong> – 这是你的管道，可以只有一个，也可以是一个列表。它们将用来保存爬取到的数据。</p></li>
+<li><p><strong>max_link</strong> – 同时最大连接数（最大同时爬取线程）。默认：12</p></li>
+<li><p><strong>request_interval</strong> – 请求之间的时间间隔（单位：秒）。默认：0</p></li>
+<li><p><strong>wait</strong> – 是否暂停程序，内部有一个 <cite>while self.wait: input()</cite>。默认开启</p></li>
+<li><p><strong>**kwargs</strong> – 这些会传给调度器的实例化参数</p></li>
+</ul>
+</dd>
+<dt class="field-even">返回</dt>
+<dd class="field-even"><p>返回调度器（如果wait = True，你应该也得不到这个调度器）</p>
+</dd>
+</dl>
+<p class="rubric">实际案例</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">quick_start</span><span class="p">(</span><span class="n">MySpider</span><span class="p">(),[</span><span class="n">P1</span><span class="p">(),</span><span class="n">P2</span><span class="p">()],</span><span class="n">max_link</span><span class="o">=</span><span class="mi">32</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="requests_magic.start">
+<span class="sig-prename descclassname"><span class="pre">requests_magic.</span></span><span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spiders</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#requests_magic.spider.Spider" title="requests_magic.spider.Spider"><span class="pre">requests_magic.spider.Spider</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#requests_magic.spider.Spider" title="requests_magic.spider.Spider"><span class="pre">requests_magic.spider.Spider</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scheduler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#requests_magic.scheduler.Scheduler" title="requests_magic.scheduler.Scheduler"><span class="pre">requests_magic.scheduler.Scheduler</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">wait</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#requests_magic.scheduler.Scheduler" title="requests_magic.scheduler.Scheduler"><span class="pre">requests_magic.scheduler.Scheduler</span></a></span></span><a class="headerlink" href="#requests_magic.start" title="永久链接至目标">¶</a></dt>
+<dd><p>开始爬虫，这将自动调用 spiders 的 start 方法并传给调度器</p>
+<dl class="field-list simple">
+<dt class="field-odd">参数</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spiders</strong> – 这是你的爬虫，可以只有一个，也可以是一个列表。这将自动执行这些爬虫的 start 方法，并将结果发送给调度器。</p></li>
+<li><p><strong>scheduler</strong> – 你的调度器</p></li>
+<li><p><strong>wait</strong> – 是否暂停程序，内部有一个 <cite>while self.wait: input()</cite>。默认开启</p></li>
+</ul>
+</dd>
+<dt class="field-even">返回</dt>
+<dd class="field-even"><p>返回调度器（如果wait = True，你应该也得不到这个调度器）</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">目录</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">requests_magic package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-requests_magic.exceptions">requests_magic.exceptions module</a></li>
+<li><a class="reference internal" href="#module-requests_magic.item">requests_magic.item module</a></li>
+<li><a class="reference internal" href="#module-requests_magic.logger">requests_magic.logger module</a></li>
+<li><a class="reference internal" href="#module-requests_magic.middleware">requests_magic.middleware module</a></li>
+<li><a class="reference internal" href="#module-requests_magic.pipeline">requests_magic.pipeline module</a></li>
+<li><a class="reference internal" href="#module-requests_magic.request">requests_magic.request module</a></li>
+<li><a class="reference internal" href="#module-requests_magic.scheduler">requests_magic.scheduler module</a></li>
+<li><a class="reference internal" href="#module-requests_magic.spider">requests_magic.spider module</a></li>
+<li><a class="reference internal" href="#module-requests_magic.utils">requests_magic.utils module</a></li>
+<li><a class="reference internal" href="#module-requests_magic">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>本页</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/requests_magic.rst.txt"
+            rel="nofollow">显示源代码</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">快速搜索</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="转向" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>导航</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="总目录"
+             >索引</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python 模块索引"
+             >模块</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">requests-magic  文档</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">requests_magic package</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; 版权所有 2021, Rika.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
+    </div>
+  </body>
+</html>
