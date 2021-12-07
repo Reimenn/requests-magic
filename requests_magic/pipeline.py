@@ -3,6 +3,8 @@
 
 import os
 import threading
+import time
+
 from .logger import Logger
 
 
@@ -43,6 +45,8 @@ class Pipeline(threading.Thread):
                 except Exception as e:
                     Logger.error(f"{self} [SAVE item {item.name} error] {e}")
                     raise e
+            else:
+                time.sleep(0.1)
 
     def acceptable(self, item) -> bool:
         """ 判断是否可以接收某个 item。

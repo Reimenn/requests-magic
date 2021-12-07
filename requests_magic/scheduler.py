@@ -1,4 +1,5 @@
-from typing import List, Iterable, Union
+from collections import Generator
+from typing import List, Union
 from .request import Request
 from .item import Item
 from .pipeline import Pipeline
@@ -10,6 +11,10 @@ import time
 
 class Scheduler(threading.Thread):
     """调度器，核心组件，负责请求管理与 item 转发
+
+    Attributes:
+        pause: 是否暂停，如果是，则不会发送新请求
+        link_requests: 正在下载中的请求
     """
 
     def __init__(self, pipelines: Union[Pipeline, List[Pipeline]], max_link: int = 12,
@@ -38,6 +43,8 @@ class Scheduler(threading.Thread):
         for pl in self.pipeline_list:
             if not pl.daemon:
                 pl.start()
+
+        self.pause: bool = False
 
     def add_request(self, request: Request) -> None:
         """添加一个新的请求到请求队列（不会立刻执行）
@@ -75,10 +82,12 @@ class Scheduler(threading.Thread):
             result_ite: 结果
             from_spider: 产生结果的爬虫
         """
+
         if result_ite is None:
             return
-        if not isinstance(result_ite, Iterable):
+        if not isinstance(result_ite, Generator) and not isinstance(result_ite, list):
             result_ite = [result_ite]
+
         for result in result_ite:
             if isinstance(result, Request):
                 self.add_request(result)
@@ -93,17 +102,19 @@ class Scheduler(threading.Thread):
         """开始处理请求队列
         """
         while True:
+            if self.pause or not self.requests or len(self.link_requests) >= self.max_link:
+                time.sleep(0.1)
+                continue
             try:
-                if len(self.link_requests) < self.max_link and self.requests:
-                    request = self.requests[0]
-                    del self.requests[0]
-                    request.start()
-                    self.link_requests.append(request)
-                    # rest
-                    if self.request_interval > 0:
-                        time.sleep(self.request_interval)
+                request = self.requests[0]
+                del self.requests[0]
+                request.start()
+                self.link_requests.append(request)
+                # rest
+                if self.request_interval > 0:
+                    time.sleep(self.request_interval)
             except Exception as e:
-                Logger.error(e)
+                Logger.error(f'[Scheduler] {e}')
 
     def downloader_finish(self, result, request: Request) -> None:
         """当下载完成时，由 Request 调用。

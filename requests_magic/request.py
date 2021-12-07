@@ -3,13 +3,14 @@
 Attributes:
     default_headers (dict): 当请求没有指定 headers 时，会从这里copy一份，默认是空的。
 """
-
+import json
 from typing import Callable
 from .logger import Logger
 from .middleware import *
 import threading
 import time
 import hashlib
+import requests_magic.utils as utils
 
 default_headers: dict = {}
 
@@ -131,13 +132,83 @@ class Request:
         """完成请求
         """
         self.stop_thread()
-        self.scheduler.downloader_finish(self.result,self)
+        self.scheduler.downloader_finish(self.result, self)
 
     def stop_thread(self) -> None:
         """终止请求线程
         """
         del self.thread
         self.thread = None
+
+    def to_json(self) -> str:
+        """把请求转换成JSON字符串，可以保存起来以后再读取再请求
+
+        Returns:
+            Json 字符串
+        Warnings:
+            这是个测试功能，不一定稳定，要配合 from_json 方法使用
+            这不会保存下载状态和结果，并且 Request 的 **kwargs 参数会以简单的 json.dumps 形式保存，可能会存在问题。
+            callback、downloader等属性会被保存成字符串，在读取时利用 importlib 模块加载。
+            callback 和 preparse 必须是爬虫中的方法
+            downloader 和 downloader_filter 必须是某个模块中的顶级方法
+        """
+        if self.thread:
+            Logger.warning(
+                "The downloading state will not be retained after the request being downloaded is converted to json")
+        if self.result:
+            Logger.warning(
+                "The downloaded result will not be retained after the request being downloaded is converted to json")
+        json_dict = {
+            'name': self.name,
+            'url': self.url,
+            'method': self.method,
+            'data': self.data,
+            'tags': self.tags,
+            'headers': self.headers,
+            'time_out': self.time_out,
+            'time_out_wait': self.time_out_wait,
+            'time_out_retry': self.time_out_retry,
+            'kwargs': self.kwargs,
+            'downloader':
+                (self.downloader.__module__, self.downloader.__name__),
+            'downloader_filter':
+                (self.downloader_filter.__module__, self.downloader_filter.__name__),
+            'callback': self.callback.__name__,
+            'preparse': self.preparse.__name__,
+        }
+        return json.dumps(json_dict)
+
+    @staticmethod
+    def from_json(json_str: str, spider):
+        """ 从 json 字符串中解析出新的 Request
+
+        Args:
+            json_str: json 字符串
+            spider: 负责产生这个请求的爬虫（callback 和 preparse 会从这个爬虫上获取）
+
+        Returns:
+            解析得到的请求
+
+        Warnings:
+            这是个测试功能，不一定稳定，要配合 to_json 方法使用
+            其他警告查看 to_json 方法文档
+
+        """
+        from requests_magic.spider import Spider
+        spider: Spider
+        result: Request
+        json_dict: dict = json.loads(json_str)
+
+        json_dict['downloader'] = utils.getattr_in_module(*json_dict['downloader'])
+        json_dict['downloader_filter'] = utils.getattr_in_module(*json_dict['downloader_filter'])
+        json_dict['callback'] = spider.__getattribute__(json_dict['callback'])
+        json_dict['preparse'] = spider.__getattribute__(json_dict['preparse'])
+
+        kwargs = json_dict['kwargs']
+        del json_dict['kwargs']
+
+        result = Request(**json_dict, **kwargs)
+        return result
 
 
 class RequestThread(threading.Thread):
@@ -207,6 +278,7 @@ class RequestThread(threading.Thread):
                 retry = True
         else:
             Logger.error(f'{self.request} {e}')
+            raise e
 
         if self.request.thread != self:
             return
