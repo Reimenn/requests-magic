@@ -4,12 +4,12 @@ Attributes:
     default_headers (dict): 当请求没有指定 headers 时，会从这里copy一份，默认是空的。
 """
 import threading
-import json
 import time
 import hashlib
-from typing import Callable, NoReturn, Dict, Union
+from typing import Callable, NoReturn, Dict
 from .logger import Logger
-from .middleware import *
+from .downloader import *
+from .exceptions import *
 from .utils import HasNameObject, getattr_in_module
 
 __FUCK_CIRCULAR_IMPORT = False
@@ -74,7 +74,7 @@ class Request(HasNameObject):
         self.spider = callback.__self__
         from .spider import Spider
         if not isinstance(self.spider, Spider):
-            raise RequestError('callback must be a method in spider')
+            raise MagicParameterError('callback must be a method in spider')
 
         self.preparse = preparse
         if self.preparse is None:
@@ -107,7 +107,9 @@ class Request(HasNameObject):
         """开始下载，自动创建 RequestThread，下载完成后会自动调用调度器的方法
         """
         if self.thread:
-            Logger.error(f"{self} downloading, dont start")
+            Logger.error(f"{self} downloading, Can't start")
+            return
+        Logger.info(f"{self} [{self.method.upper()} START] {self.show_url}")
         self.thread = RequestThread(self)
         self.thread.start()
 
@@ -121,28 +123,51 @@ class Request(HasNameObject):
             f'{self.method};{self.url};{self.data};{self.time_out_retry}'.encode('utf-8')
         ).hexdigest()
 
-    def retry(self) -> None:
-        """重新请求
-        """
-        if not self.scheduler:
-            Logger.error(f'{self} Requests that have not been requested cannot be retry')
+    def request_thread_error(self, error: BaseException) -> NoReturn:
+        if self.thread != threading.current_thread():
             return
-        self.start_time = -1
-        self.total_time = -1
-        self.result = None
-        self.stop()
-        self.scheduler.downloader_retry(self)
 
-    def abandon(self) -> None:
-        """放弃请求
-        """
         self.stop()
         self.scheduler.downloader_abandon(self)
+        Logger.error(f'{self} {error}')
 
-    def finish(self) -> None:
-        """完成请求
-        """
+    def request_thread_fail(self, operate: DownloaderFailOperate) -> NoReturn:
+        if self.thread != threading.current_thread():
+            return
+
         self.stop()
+        if isinstance(operate, Timeout):
+            message = f'{self} Request is timeout ({self.time_out}s) to {self.url}. '
+            if self.time_out_retry > 0:
+                message += \
+                    f'Try again in {self.time_out_wait} seconds. ({self.time_out_retry - 1} remaining)'
+            else:
+                message += 'Gave up the request'
+            Logger.warning(message)
+            if self.time_out_retry > 0:
+                self.time_out_retry -= 1
+                if self.time_out_wait > 0:
+                    time.sleep(self.time_out_wait)
+                self.scheduler.downloader_retry(self)
+        elif isinstance(operate, Retry):
+            Logger.warning(f'{self} Retry [{self.method.upper()}] {self.show_url} in {operate.wait} seconds')
+            if operate.wait > 0:
+                time.sleep(operate.wait)
+            self.scheduler.downloader_retry(self, jump_in_line=operate.jump_in_line)
+        elif isinstance(operate, Abandon):
+            Logger.warning(f'{self} Abandon [{self.method.upper()}] {self.show_url}')
+            self.scheduler.downloader_abandon(self)
+        elif isinstance(operate, Error):
+            Logger.error(f'{self} {operate.message}')
+            self.scheduler.downloader_abandon(self)
+
+    def request_thread_finish(self, result) -> NoReturn:
+        if self.thread != threading.current_thread():
+            return
+
+        self.stop()
+        self.result = result
+        Logger.info(f"{self} [{self.method.upper()} OVER {round(self.total_time, 2)}s] {self.show_url}")
         self.scheduler.downloader_finish(self.result, self)
 
     def stop(self) -> None:
@@ -236,63 +261,20 @@ class RequestThread(threading.Thread):
     def run(self) -> None:
         """开始下载
         """
-        self.request.result = None
-        self.call_downloader()
-        if self.request.result is None:
+        self.request.start_time = time.time()
+        result = self.request.downloader(self.request)
+        self.request.total_time = time.time() - self.request.start_time
+        if isinstance(result, DownloaderFailOperate):
+            self.request.request_thread_fail(result)
             return
-        if self.request.thread != self:
+        if isinstance(result, BaseException):
+            self.request.request_thread_error(result)
             return
-        self.request.finish()
-
-    def call_downloader(self) -> None:
-        """调用下载器并纪录结果到 Request，可能会触发重试、放弃等操作
-        """
-        try:
-            Logger.info(
-                f"{self.request} [START] {self.request.show_url}")
-            self.request.start_time = time.time()
-            result = self.request.downloader(self.request)
-            self.request.total_time = time.time() - self.request.start_time
-            Logger.info(f"{self.request} [OVER {round(self.request.total_time, 2)}s] {self.request.show_url}")
-            self.request.downloader_filter(result, self.request)
-            self.request.result = result
-        except Exception as e:
-            self.parse_downloader_exception(e)
-
-    def parse_downloader_exception(self, e: Exception) -> None:
-        """解析调用下载器时得到的错误，用来判断是否要重试、放弃等
-        """
-        retry: bool = False
-
-        if isinstance(e, RequestCanRetryError):
-            # to retry
-            retry = True
-            if isinstance(e, RequestTimeoutError):
-                # retry by time_out_retry count
-                message = f'{self.request} Request is time out to {self.request.url}. '
-                if self.request.time_out_retry > 0:
-                    message += \
-                        f'Try again in {self.request.time_out_wait} seconds.' \
-                        f' ({self.request.time_out_retry - 1} remaining)'
-                else:
-                    message += 'Gave up the request'
-                Logger.warning(message)
-
-                if self.request.time_out_retry > 0:
-                    self.request.time_out_retry -= 1
-                    time.sleep(self.request.time_out_wait)
-                else:
-                    retry = False
-            else:
-                Logger.warning(f'{self.request} Retry {self.request}')
-        else:
-            Logger.error(f'{self.request} {e}')
-            raise e
-
-        if self.request.thread != self:
+        result_filter = self.request.downloader_filter(result, self.request)
+        if isinstance(result_filter, DownloaderFailOperate):
+            self.request.request_thread_fail(result_filter)
             return
-
-        if retry:
-            self.request.retry()
-        else:
-            self.request.abandon()
+        if isinstance(result_filter, BaseException):
+            self.request.request_thread_error(result_filter)
+            return
+        self.request.request_thread_finish(result)

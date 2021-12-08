@@ -46,9 +46,9 @@ class Pipeline(HasNameObject, threading.Thread):
                 del self.items[0]
                 try:
                     self.save(item)
-                    Logger.info(f"{self} [SAVE item {item.name} finish]")
+                    Logger.info(f"{self} [SAVE ITEM {item.name} Finish]")
                 except Exception as e:
-                    Logger.error(f"{self} [SAVE item {item.name} error] {e}")
+                    Logger.error(f"{self} [SAVE ITEM {item.name} Error] {e}")
                     raise e
             else:
                 time.sleep(0.1)

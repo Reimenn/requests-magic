@@ -99,7 +99,7 @@ class Scheduler(HasNameObject, threading.Thread):
         """
         md5: str = request.md5()
         if self.distinct and md5 in self._requests_md5:
-            Logger.warning(f'Repeated request: {request}')
+            Logger.info(f'Repeated request: {request} {request.show_url}')
             return
         request.spider = from_spider
         request.scheduler = self
@@ -202,8 +202,8 @@ class Scheduler(HasNameObject, threading.Thread):
             try:
                 request = self._request_list[0]
                 self._request_list.remove(request)
-                request.start()
                 self._link_requests.append(request)
+                request.start()
                 # rest
                 if self.request_interval > 0:
                     time.sleep(self.request_interval)
@@ -230,7 +230,7 @@ class Scheduler(HasNameObject, threading.Thread):
             return
         self._link_requests.remove(request)
 
-    def downloader_retry(self, request: Request) -> NoReturn:
+    def downloader_retry(self, request: Request, jump_in_line: bool = False) -> NoReturn:
         """重试一个请求
         """
         if request not in self._link_requests:
@@ -240,7 +240,10 @@ class Scheduler(HasNameObject, threading.Thread):
             Logger.error(f"The retry download have not started to request. {request}")
             return
         self._link_requests.remove(request)
-        self._request_list.append(request)
+        if jump_in_line:
+            self._request_list.insert(0, request)
+        else:
+            self._request_list.append(request)
 
     def get_tag(self, key: str, default=None) -> Any:
         """获取 tag。支持使用切片进行这个操作
@@ -370,9 +373,8 @@ class Scheduler(HasNameObject, threading.Thread):
                 self[k] = v
 
         # load MD5 list
-        if self.distinct:
-            with open(os.path.join(dir_path, 'md5.txt'), 'r', encoding=encoding) as f:
-                self._requests_md5 = f.read().split('\n')
+        with open(os.path.join(dir_path, 'md5.txt'), 'r', encoding=encoding) as f:
+            self._requests_md5 = f.read().split('\n')
         Logger.info(f"Load '{dir_path}' finish")
 
     def get_spider_by_identity(self, identity: str) -> Spider:

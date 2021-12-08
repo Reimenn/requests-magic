@@ -8,7 +8,7 @@
 
 - Scheduler 加了一个 tags 属性，用来纪录一些额外信息，计划做中断续爬功能时用到
 
-- Scheduler 添加了 save_requests\load_requests\save_tags\load_tags 方法，它们可以基于json文件实现中断续爬
+- Scheduler 添加了 save\load 方法，用来持久化调度器状态
 
 - 同时增加了 get_tag、set_tag 方法以及对应的切片方式调用
 
