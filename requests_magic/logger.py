@@ -10,14 +10,14 @@ Logger.addHandler(streamHandler)
 Logger.setLevel(logging.INFO)
 
 
-def LoggerLevel(level):
+def set_logger_level(level):
     """给你的爬虫项目设置一下日志等级
 
     Args:
         level: 等级，参考内置模块 logging
     Examples:
         >>> import requests_magic as rm
-        >>> rm.LoggerLevel('WARNING')
+        >>> rm.set_logger_level('WARNING')
     """
     Logger.setLevel(level)
     streamHandler.setLevel(level)

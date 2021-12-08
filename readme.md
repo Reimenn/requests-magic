@@ -54,7 +54,7 @@ import requests_magic as rm
 
 class MyPipeline(rm.Pipeline):
     def save(self, item):
-        with open(item.tags['file'], 'w') as f:
+        with open(item._tags['file'], 'w') as f:
             f.write(str(item))  
 ```
 

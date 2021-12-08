@@ -5,8 +5,12 @@ from .exceptions import *
 from .utils import *
 import requests
 
+__FUCK_CIRCULAR_IMPORT = False
+if __FUCK_CIRCULAR_IMPORT:
+    from .request import Request
 
-def requests_downloader(request) -> requests.Response:
+
+def requests_downloader(request:'Request') -> requests.Response:
     """这是默认的下载中间件，基于 requests
 
     Args:
@@ -23,7 +27,7 @@ def requests_downloader(request) -> requests.Response:
         raise RequestTimeoutError(request)
 
 
-def requests_downloader_filter(response: requests.Response, request) -> None:
+def requests_downloader_filter(response: requests.Response, request:'Request') -> None:
     """默认的请求过滤器。
     基于 requests，用来过滤下载完成后的结果，没有返回值，但可能抛出各种异常
 

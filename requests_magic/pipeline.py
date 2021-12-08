@@ -4,15 +4,19 @@
 import os
 import threading
 import time
-
 from .logger import Logger
+from .utils import HasNameObject
+
+__FUCK_CIRCULAR_IMPORT = False
+if __FUCK_CIRCULAR_IMPORT:
+    from .scheduler import Scheduler
 
 
-class Pipeline(threading.Thread):
+class Pipeline(HasNameObject, threading.Thread):
     """管道基类，用来持久化数据，这是一个新线程
     """
 
-    def __init__(self, name: str = ""):
+    def __init__(self, scheduler: 'Scheduler' = None, name: str = ""):
         """管道基类，用来持久化数据，这是一个新线程
 
         Args:
@@ -21,6 +25,7 @@ class Pipeline(threading.Thread):
             不要实例化这个类，应该继承Pipeline实现你自己的持久化
         """
         super().__init__()
+        self.scheduler: 'Scheduler' = scheduler
         self.name = name
         self.items = []
 
@@ -51,6 +56,7 @@ class Pipeline(threading.Thread):
     def acceptable(self, item) -> bool:
         """ 判断是否可以接收某个 item。
         调度器会根据这里的返回值判断是否继续用这个管道保存这个item，
+        重写这里实现你自己的判断
 
         Args:
             item: 被判断的item
@@ -62,7 +68,8 @@ class Pipeline(threading.Thread):
         return True
 
     def save(self, item):
-        """真正的持久化方法，在这里保存数据
+        """真正的持久化方法，
+        重写这里用你的方式保存数据
 
         Args:
             item: 需要持久化的数据
@@ -72,8 +79,12 @@ class Pipeline(threading.Thread):
         """
         pass
 
-    def __str__(self) -> str:
-        return f"[Pipeline - {self.name}]" if self.name else ''
+    def identity(self) -> str:
+        """ 获取当前实例的唯一标识，中断续爬用这个表示获取当前管道
+        Warnings:
+            标识相同的管道只能存在一个
+        """
+        return f'{self.__class__.__name__}|{self.name}'
 
 
 class SimpleConsolePipeline(Pipeline):
@@ -90,7 +101,7 @@ class SimpleFilePipeline(Pipeline):
     简单的文件持久化管道
     """
 
-    def __init__(self, name: str = "SimpleFilePipeline",
+    def __init__(self, scheduler: 'Scheduler' = None, name: str = "SimpleFilePipeline",
                  output_file_tag_key: str = 'file',
                  mode: str = 'a',
                  auto_create_folder: bool = True,
@@ -112,7 +123,7 @@ class SimpleFilePipeline(Pipeline):
         encoding
             文件编码，默认：utf-8
         """
-        super().__init__(name)
+        super().__init__(scheduler, name)
         self.newline = newline
         self.encoding = encoding
         self.auto_create_folder = auto_create_folder

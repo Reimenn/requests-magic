@@ -1,3 +1,29 @@
+## v1.3-beta
+
+2021年12月8日
+
+---
+
+#### 添加：
+
+- Scheduler 加了一个 tags 属性，用来纪录一些额外信息，计划做中断续爬功能时用到
+
+- Scheduler 添加了 save_requests\load_requests\save_tags\load_tags 方法，它们可以基于json文件实现中断续爬
+
+- 同时增加了 get_tag、set_tag 方法以及对应的切片方式调用
+
+- 添加了 HasNameObject 工具类，重写了 `__str__` ，pipeline、spider等都继承了他
+
+#### 修改：
+
+- Spider 和 Pipeline 可以 self.scheduler 了
+
+- 修改了调度器的启动方式和组织结构，现在可以抛弃 quick_start 和 start 方法了，直接实例化 Scheduler 即可
+
+- 更改了 Scheduler 的构造方法
+
+- 把 Request 类中 to_json 和 from_json 方法中转换 dict 的操作独立了出来，提取出了新的 to_dict 和 from_dict 方法
+
 ## v1.2.1-beta
 
 2021年12月7日
@@ -43,7 +69,7 @@
 **重请求添加到调度器**
 
 > 修复了重请求无视调度器请求间隔时间 Bug，现在的重请求会重新添加到 Scheduler 中。
-> 
+>
 > 为此，建立了一个新的 RequestThread 类，Request 类的 start 方法会实例化一个新的 RequestThread 来发送请求（曾经的Request直接继承自Thread，导致其不能反复start，现在可以反复start了）
 
 ## v1.2-beta

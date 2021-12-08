@@ -8,6 +8,10 @@ class MagicError(Exception):
     pass
 
 
+class MagicSaveError(MagicError):
+    pass
+
+
 class SchedulerError(MagicError):
     """调度器异常类型
     """
