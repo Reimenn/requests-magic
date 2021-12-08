@@ -16,8 +16,6 @@ __FUCK_CIRCULAR_IMPORT = False
 if __FUCK_CIRCULAR_IMPORT:
     from .scheduler import Scheduler
 
-default_headers: dict = {}
-
 
 class Request(HasNameObject):
     """表示一个请求，这里会自动创建 RequestThread
@@ -58,7 +56,7 @@ class Request(HasNameObject):
         if data is None:
             data = {}
         if headers is None:
-            headers = default_headers.copy()
+            headers = callback.__self__.default_headers.copy()
 
         self.url: str = url
         self.data: dict = data

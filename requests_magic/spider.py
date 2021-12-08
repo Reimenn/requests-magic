@@ -21,6 +21,7 @@ class Spider(HasNameObject):
         """
         self.scheduler: 'Scheduler' = scheduler
         self.name = name
+        self.default_headers: dict = {}
 
     def identity(self) -> str:
         """ 获取当前实例的唯一标识，中断续爬用这个表示获取当前爬虫

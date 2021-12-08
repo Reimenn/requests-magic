@@ -1,3 +1,13 @@
+## v1.3.1
+
+2021年12月8日
+
+---
+
+#### 修改：
+
+- default_headers 从 Request 模块移动到了 Spider 上，可在 Spider 中设置 self.default_headers 控制从这个 Spider 产生的请求默认头
+
 ## v1.3-beta
 
 2021年12月8日
