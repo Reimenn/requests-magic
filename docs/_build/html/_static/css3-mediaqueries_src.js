@@ -700,7 +700,7 @@ var cssHelper = function () {
 
 
 
-// function to test and apply parsed media queries against browser capabilities
+// function to test_test and apply parsed media queries against browser capabilities
 domReady(function enableCssMediaQueries() {
 	var meter;
 
@@ -715,7 +715,7 @@ domReady(function enableCssMediaQueries() {
 
 	var nativeSupport = function () {
 		// check support for media queries
-		var id = 'css3-mediaqueries-test';
+		var id = 'css3-mediaqueries-test_test';
 		var el = document.createElement('div');
 		el.id = id;
 		var style = cssHelper.addStyle('@media all and (width) { #' + id +
@@ -791,7 +791,7 @@ domReady(function enableCssMediaQueries() {
 					return false;
 				}
 			}
-			else { // test width without value
+			else { // test_test width without value
 				return width > 0;
 			}
 		}
@@ -805,7 +805,7 @@ domReady(function enableCssMediaQueries() {
 					return false;
 				}
 			}
-			else { // test height without value
+			else { // test_test height without value
 				return height > 0;
 			}
 		}
@@ -819,7 +819,7 @@ domReady(function enableCssMediaQueries() {
 					return false;
 				}
 			}
-			else { // test width without value
+			else { // test_test width without value
 				return width > 0;
 			}
 		}
@@ -833,7 +833,7 @@ domReady(function enableCssMediaQueries() {
 					return false;
 				}
 			}
-			else { // test height without value
+			else { // test_test height without value
 				return height > 0;
 			}
 		}
@@ -850,7 +850,7 @@ domReady(function enableCssMediaQueries() {
 					return false;
 				}
 			}
-			else { // test height without value
+			else { // test_test height without value
 				return colors > 0;
 			}
 		}
@@ -864,7 +864,7 @@ domReady(function enableCssMediaQueries() {
 					return false;
 				}
 			}
-			else { // test height without value
+			else { // test_test height without value
 				return color > 0;
 			}
 		}
@@ -884,7 +884,7 @@ domReady(function enableCssMediaQueries() {
 					return false;
 				}
 			}
-			else { // test height without value
+			else { // test_test height without value
 				return res > 0;
 			}
 		}
@@ -971,17 +971,17 @@ domReady(function enableCssMediaQueries() {
                 }
 			}
 		}
-		if (tswe.length > 0) { // types with query expressions that passed the test
+		if (tswe.length > 0) { // types with query expressions that passed the test_test
 		    styles[styles.length] = cssHelper.addStyle(stsh.getCssText(), tswe, false);
 		}
 		var mqls = stsh.getMediaQueryLists();
 		if (allPassed) {
-		    // If 'all' in media attribute passed the test, then test all @media types in linked CSS and create style with those types.
+		    // If 'all' in media attribute passed the test_test, then test_test all @media types in linked CSS and create style with those types.
 		    testMediaQueryLists(mqls);
 		}
 		else {
-		    // Or else, test only media attribute types that passed the test and also 'all'.
-		    // For positive '@media all', create style with attribute types that passed their test.
+		    // Or else, test_test only media attribute types that passed the test_test and also 'all'.
+		    // For positive '@media all', create style with attribute types that passed their test_test.
 		    testMediaQueryLists(mqls, ts);
 	    }
     };

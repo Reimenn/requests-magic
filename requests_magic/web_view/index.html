@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Web View</title>
+    <style>
+        :root {
+            --main-color: rgb(63, 136, 205);
+            --text-color: rgb(255, 255, 255);
+            --border-color: #00000066;
+        }
+
+        html, body {
+            padding: 0;
+            margin: 0;
+            text-align: center;
+        }
+
+        table td {
+            text-align: left;
+        }
+
+        .title {
+            text-align: center;
+            background: var(--main-color);
+            color: var(--text-color);
+            padding: 1em;
+            margin: 0;
+        }
+
+        .card {
+            border-radius: 12px;
+            border: solid 1px var(--border-color);
+            border-top: none;
+            overflow: hidden;
+            display: inline-block;
+            width: 80%;
+            margin: 1em 0;
+        }
+
+        .border {
+            border: solid 1px var(--border-color);
+        }
+
+        .card header {
+            text-align: left;
+            box-shadow: 0 0 10px 0 #00000044;
+            background: var(--main-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1em;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .card .content {
+            /*max-height: 200px;*/
+            /*overflow: scroll;*/
+            padding: 1em;
+        }
+
+        .table_head {
+            width: 100%;
+        }
+
+        .table_head table {
+            width: 100%;
+        }
+
+        .table_body {
+            width: 100%;
+            overflow-y: scroll;
+            max-height: 400px;
+        }
+
+        .table_body table {
+            width: 100%;
+
+        }
+
+        .table_body button {
+            margin: 0;
+            padding: 0;
+            border: none;
+            background: none;
+        }
+
+        .controller {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+        }
+
+        .controller > div {
+            margin: 0 5em;
+            text-align: center;
+        }
+
+        .controller input {
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<h1 class="title">Request Magic Web View</h1>
+<br>
+<span>This is not refreshed in real time</span>
+<br>
+<div class="card border">
+    <div class="controller content">
+        <div>
+            % if pause:
+            <span>Scheduler is pause</span>
+            <form action="/command/continue">
+                <input type="submit" value="Continue">
+            </form>
+            % else:
+            <span>Scheduler is running</span>
+            <form action="/command/pause">
+                <input type="submit" value="Pause">
+            </form>
+            % end
+        </div>
+        <div>
+            % if not saving:
+            <span>The current state can be saved</span>
+            <form action="/command/save">
+                <label>
+                    Path:
+                    <input type="text" name="path">
+                </label>
+                <label>
+                    Fast:
+                    <input type="checkbox" name="fast">
+                </label>
+                <input type="submit" value="Save">
+            </form>
+            % end
+        </div>
+    </div>
+
+</div>
+<!-- Link Request -->
+<div class="card">
+    <header>Connecting request ({{len(lr)}})</header>
+    <div class="content">
+        <table class="table_head">
+            <thead>
+            <tr>
+                <th style="width: 10%">Method</th>
+                <th style="text-align: left">Url</th>
+                <th style="width: 10%;text-align: right">Time</th>
+                <th style="width: 20%">Spider</th>
+                <th style="width: 5%">Data</th>
+                <th style="width: 5%">Headers</th>
+                <th style="width: 5%">Tags</th>
+            </tr>
+            </thead>
+        </table>
+        <div class="table_body">
+            <table>
+                <tbody>
+                % for i in lr:
+                <tr>
+                    <td style="width: 10%;text-align: center">{{i['method']}}</td>
+                    <td>{{i['url']}}</td>
+                    <td style="width: 10%;text-align: right">{{round(time - i['start_time'],2 )}}</td>
+                    <td style="width: 20%;text-align: center">{{i['spider']}}</td>
+                    <td style="width: 5%;text-align: center">
+                        <button title="{{i['data']}}">Hover</button>
+                    </td>
+                    <td style="width: 5%;text-align: center">
+                        <button title="{{i['headers']}}">Hover</button>
+                    </td>
+                    <td style="width: 5%;text-align: center">
+                        <button title="{{i['tags']}}">Hover</button>
+                    </td>
+                </tr>
+                % end
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Request List -->
+<div class="card">
+    <header>Request queue ({{len(pr)}})</header>
+    <div class="content">
+        <table class="table_head">
+            <thead>
+            <tr>
+                <th style="width: 10%">Method</th>
+                <th style="text-align: left">Url</th>
+                <th style="width: 20%">Spider</th>
+                <th style="width: 5%">Data</th>
+                <th style="width: 5%">Headers</th>
+                <th style="width: 5%">Tags</th>
+            </tr>
+            </thead>
+        </table>
+        <div class="table_body">
+            <table>
+                <tbody>
+                % for i in pr:
+                <tr>
+                    <td style="width: 10%;text-align: center">{{i['method']}}</td>
+                    <td>{{i['url']}}</td>
+
+                    <td style="width: 20%;text-align: center">{{i['spider']}}</td>
+                    <td style="width: 5%;text-align: center">
+                        <button title="{{i['data']}}">Hover</button>
+                    </td>
+                    <td style="width: 5%;text-align: center">
+                        <button title="{{i['headers']}}">Hover</button>
+                    </td>
+                    <td style="width: 5%;text-align: center">
+                        <button title="{{i['tags']}}">Hover</button>
+                    </td>
+                </tr>
+                % end
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!--Log request-->
+<div class="card">
+    <header>History Request ({{len(log)}})</header>
+    <div class="content">
+        <table class="table_head">
+            <thead>
+            <tr>
+                <th style="width: 10%">Method</th>
+                <th style="text-align: left">Url</th>
+                <th style="width: 10%;text-align: right">Total time</th>
+                <th style="width: 10%;text-align: right">State</th>
+                <th style="width: 20%">Spider</th>
+            </tr>
+            </thead>
+        </table>
+        <div class="table_body">
+            <table>
+                <tbody>
+                % for i in log:
+                <tr>
+                    <td style="width: 10%;text-align: center">{{i['method']}}</td>
+                    <td>{{i['url']}}</td>
+                    <td style="width: 10%;text-align: right">{{round(i['total_time'],2 )}}</td>
+                    <td style="width: 10%;text-align: right">{{i['state']}}</td>
+                    <td style="width: 20%;text-align: center">{{i['spider']}}</td>
+                </tr>
+                % end
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

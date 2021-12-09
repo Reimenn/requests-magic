@@ -1,7 +1,6 @@
 """工具模块
 """
 import importlib
-from typing import Any
 
 
 def request_to_requests_kwargs(request) -> dict:

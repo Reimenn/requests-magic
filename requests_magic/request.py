@@ -6,7 +6,7 @@ Attributes:
 import threading
 import time
 import hashlib
-from typing import Callable, NoReturn, Dict
+from typing import Callable, NoReturn, Dict, Any
 from .logger import Logger
 from .downloader import *
 from .exceptions import *
@@ -72,7 +72,7 @@ class Request(HasNameObject):
         self.spider = callback.__self__
         from .spider import Spider
         if not isinstance(self.spider, Spider):
-            raise MagicParameterError('callback must be a method in spider')
+            raise TypeError('callback must be a method in spider')
 
         self.preparse = preparse
         if self.preparse is None:
@@ -109,6 +109,7 @@ class Request(HasNameObject):
             return
         Logger.info(f"{self} [{self.method.upper()} START] {self.show_url}")
         self.thread = RequestThread(self)
+        self.start_time = time.time()
         self.thread.start()
 
     def md5(self) -> str:
@@ -144,14 +145,14 @@ class Request(HasNameObject):
             Logger.warning(message)
             if self.time_out_retry > 0:
                 self.time_out_retry -= 1
-                if self.time_out_wait > 0:
-                    time.sleep(self.time_out_wait)
-                self.scheduler.downloader_retry(self)
+                # if self.time_out_wait > 0:
+                #     time.sleep(self.time_out_wait)
+                self.scheduler.downloader_retry(self, wait=self.time_out_wait)
         elif isinstance(operate, Retry):
             Logger.warning(f'{self} Retry [{self.method.upper()}] {self.show_url} in {operate.wait} seconds')
-            if operate.wait > 0:
-                time.sleep(operate.wait)
-            self.scheduler.downloader_retry(self, jump_in_line=operate.jump_in_line)
+            # if operate.wait > 0:
+            #     time.sleep(operate.wait)
+            self.scheduler.downloader_retry(self, jump_in_line=operate.jump_in_line, wait=operate.wait)
         elif isinstance(operate, Abandon):
             Logger.warning(f'{self} Abandon [{self.method.upper()}] {self.show_url}')
             self.scheduler.downloader_abandon(self)
@@ -259,7 +260,7 @@ class RequestThread(threading.Thread):
     def run(self) -> None:
         """开始下载
         """
-        self.request.start_time = time.time()
+
         result = self.request.downloader(self.request)
         self.request.total_time = time.time() - self.request.start_time
         if isinstance(result, DownloaderFailOperate):

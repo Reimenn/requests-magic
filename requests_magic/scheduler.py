@@ -2,6 +2,7 @@ import json
 import os.path
 from collections import Generator
 from typing import Sequence, List, NoReturn, Dict, Any
+
 from .request import Request
 from .item import Item
 from .spider import Spider
@@ -23,16 +24,19 @@ class Scheduler(HasNameObject, threading.Thread):
     """
 
     def __init__(self, spider_class, pipeline_class=Pipeline, tags: Dict[str, Any] = None,
-                 max_link: int = 12, request_interval: float = 0, distinct: bool = True, start_pause: bool = False):
+                 max_link: int = 12, request_interval: float = 0, distinct: bool = True, start_pause: bool = False,
+                 web_view=None):
         """调度器，核心组件，爬虫的开始，负责请求管理与 item 转发
 
         Args:
+
             spider_class: 爬虫类或爬虫类们(list)，不要传递Spider实例进来
             pipeline_class: 管道类或管道类们(list)，不要传递Pipeline实例进来
             tags: 可以用来保存额外信息，例如纪录爬虫状态，可以由管道或爬虫更改
             max_link: 最大连接数，默认：12
             request_interval: 请求间隔时间，默认：0秒
             distinct: 是否开启去重，默认开启
+            web_view: 可在浏览器上查看的页面，默认关闭（None），可以设置为一个端口号，或是一个包含ip与端口的元组
 
         Warnings:
             注意线程安全问题
@@ -81,14 +85,19 @@ class Scheduler(HasNameObject, threading.Thread):
         # 是否在保存中
         self.saving: bool = False
         self.save_data: dict = {}
-
-    @property
-    def request_list(self):
-        return self._request_list
-
-    @property
-    def tags(self):
-        return self._tags
+        # 请求纪录，只保留一些基本信息（url，method，时间，结果状态码，spider）
+        self.request_log = []
+        # web view
+        if web_view:
+            port = 5012
+            host = 'localhost'
+            if isinstance(web_view, Sequence):
+                port = web_view[1]
+                host = web_view[0]
+            elif isinstance(web_view, int):
+                port = web_view
+            from .webview import SchedulerWebView
+            SchedulerWebView(self, host, port).start()
 
     def add_request(self, request: Request, from_spider: Spider) -> NoReturn:
         """添加一个新的请求到请求队列（不会立刻执行）
@@ -172,7 +181,7 @@ class Scheduler(HasNameObject, threading.Thread):
                         content = '\n'.join(self._requests_md5)
                     elif d == 'tags':
                         file_name = 'tags.json'
-                        content = json.dumps(self.tags, ensure_ascii=False)
+                        content = json.dumps(self._tags, ensure_ascii=False)
                     elif d == 'spider_list':
                         file_name = 'spider_list.json'
                         content = json.dumps(list(self._spiders.keys()), ensure_ascii=False)
@@ -210,6 +219,16 @@ class Scheduler(HasNameObject, threading.Thread):
             except Exception as e:
                 Logger.error(f'[Scheduler] {e}')
 
+    def _add_request_log(self, request: 'Request', state):
+        self.request_log.append({
+            'url': request.url,
+            'method': request.method,
+            'state': state,
+            'start_time': request.start_time,
+            'total_time': request.total_time,
+            'spider': request.spider.identity()
+        })
+
     def downloader_finish(self, result, request: Request) -> NoReturn:
         """ 当下载完成时，由 Request 调用。
         这会在请求队列中移除这个请求并自动调用解析函数
@@ -218,6 +237,14 @@ class Scheduler(HasNameObject, threading.Thread):
             Logger.error(f"The completed download is not in link_request list. {request}")
             return
         self._link_requests.remove(request)
+
+        # log
+        state = 'OK'
+        if hasattr(result, 'status_code'):
+            state += ' ' + str(result.status_code)
+        self._add_request_log(request, state)
+
+        # parse
         result = request.preparse(result, request)
         call = request.callback(result, request)
         self.add_callback_result(call, request.spider)
@@ -228,10 +255,14 @@ class Scheduler(HasNameObject, threading.Thread):
         if request not in self._link_requests:
             Logger.error(f"The abandoned download is not in link_request list. {request}")
             return
+
+        # log
+        self._add_request_log(request, 'Abandon')
+
         self._link_requests.remove(request)
 
-    def downloader_retry(self, request: Request, jump_in_line: bool = False) -> NoReturn:
-        """重试一个请求
+    def downloader_retry(self, request: Request, jump_in_line: bool = False, wait: float = 0) -> NoReturn:
+        """重试一个请求，如果有等待，则会让调用的线程暂停
         """
         if request not in self._link_requests:
             Logger.error(f"The retry download is not in link_request list. {request}")
@@ -239,7 +270,13 @@ class Scheduler(HasNameObject, threading.Thread):
         if request in self._request_list:
             Logger.error(f"The retry download have not started to request. {request}")
             return
+
+        # log
+        self._add_request_log(request, 'To Retry')
+
         self._link_requests.remove(request)
+        if wait > 0:
+            time.sleep(wait)
         if jump_in_line:
             self._request_list.insert(0, request)
         else:
@@ -387,3 +424,37 @@ class Scheduler(HasNameObject, threading.Thread):
         """ 是否有正在请求的连接
         """
         return len(self._link_requests) > 0
+
+    def get_pending_request_info(self) -> List[dict]:
+        result = []
+        for r in self._request_list:
+            result.append({
+                'method': r.method,
+                'url': r.url,
+                'data': r.data.copy(),
+                'headers': r.headers.copy(),
+                'tags': r.tags.copy(),
+                'spider': r.spider.identity(),
+                'downloader': r.downloader.__name__,
+                'downloader_filter': r.downloader_filter.__name__,
+            })
+        return result
+
+    def get_link_request_info(self) -> List[dict]:
+        result = []
+        for r in self._link_requests:
+            result.append({
+                'method': r.method,
+                'url': r.url,
+                'data': r.data.copy(),
+                'headers': r.headers.copy(),
+                'tags': r.tags.copy(),
+                'spider': r.spider.identity(),
+                'downloader': r.downloader.__name__,
+                'downloader_filter': r.downloader_filter.__name__,
+                'start_time': r.start_time
+            })
+        return result
+
+    def get_request_log_info(self) -> List[dict]:
+        return self.request_log.copy()

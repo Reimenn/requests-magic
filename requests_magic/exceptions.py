@@ -10,7 +10,3 @@ class MagicError(Exception):
 
 class MagicSaveError(MagicError):
     pass
-
-
-class MagicParameterError(MagicError, ValueError):
-    pass
