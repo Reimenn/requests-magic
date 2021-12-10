@@ -50,13 +50,13 @@
             margin: 0;
             padding: 1em;
             font-weight: bold;
-            font-size: 20px;
+            font-size: 16px;
         }
 
         .card .content {
             /*max-height: 200px;*/
             /*overflow: scroll;*/
-            padding: 1em;
+            padding: 0.6em;
         }
 
         .table_head {
@@ -97,7 +97,7 @@
         }
 
         .controller input {
-            font-size: 15px;
+            font-size: 12px;
         }
     </style>
 </head>
@@ -128,7 +128,7 @@
             <form action="/command/save">
                 <label>
                     Path:
-                    <input type="text" name="path">
+                    <input type="text" name="path" value="{{load_from}}">
                 </label>
                 <label>
                     Fast:
@@ -141,6 +141,34 @@
     </div>
 
 </div>
+
+<!-- Tags -->
+<div class="card">
+    <header>Tags ({{len(tags.keys())}})</header>
+    <div class="content">
+        <table class="table_head">
+            <thead>
+            <tr>
+                <th style="width: 10%;text-align: center">Key</th>
+                <th style="text-align: left">Value</th>
+            </tr>
+            </thead>
+        </table>
+        <div class="table_body">
+            <table>
+                <tbody>
+                % for k,v in tags.items():
+                <tr>
+                    <td style="width: 10%;text-align: center">{{k}}</td>
+                    <td>{{v}}</td>
+                </tr>
+                % end
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <!-- Link Request -->
 <div class="card">
     <header>Connecting request ({{len(lr)}})</header>

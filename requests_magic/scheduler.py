@@ -9,7 +9,6 @@ from .spider import Spider
 from .pipeline import Pipeline
 from .logger import Logger
 from .utils import HasNameObject
-from .exceptions import *
 import threading
 
 import time
@@ -78,6 +77,8 @@ class Scheduler(HasNameObject, threading.Thread):
         self._request_list: List[Request] = []
         # 正在请求中的请求
         self._link_requests: List[Request] = []
+        # 重试、等待中的请求
+        self._wait_request_list: List[Request] = []
         # 添加过的请求的 MD5
         self._requests_md5: List[str] = []
         # 是否暂停了
@@ -98,6 +99,8 @@ class Scheduler(HasNameObject, threading.Thread):
                 port = web_view
             from .webview import SchedulerWebView
             SchedulerWebView(self, host, port).start()
+
+        self.load_from: str = ''
 
     def add_request(self, request: Request, from_spider: Spider) -> NoReturn:
         """添加一个新的请求到请求队列（不会立刻执行）
@@ -151,11 +154,24 @@ class Scheduler(HasNameObject, threading.Thread):
                     f"Cannot handle {str(type(result))}, " +
                     f"Please do not generate it in spider methods.")
 
-    def start(self) -> NoReturn:
+    def start(self, load_from: str = None, load_encoding: str = 'utf-8', only_load: bool = True) -> NoReturn:
         """ 运行调度器，这会开启管道，然后执行爬虫的 start 方法
+
+        Args:
+            only_load: 如果从文件夹中读取了状态，是否仅用读取的状态开始爬虫（这将不再执行 Spider 的 start 方法），默认 开启
+            load_encoding: 读取状态的编码，默认 utf-8
+            load_from: 从某个文件夹中读取爬取状态，默认 None 或目录不存在则表示不读取
         """
         for pipeline in self._pipelines.values():
             pipeline.start()
+
+        self.load_from = load_from
+
+        if load_from and os.path.exists(load_from):
+            self.load(load_from, load_encoding)
+            if only_load:
+                super().start()
+                return
 
         for spider in self._spiders.values():
             call = spider.start()
@@ -207,7 +223,6 @@ class Scheduler(HasNameObject, threading.Thread):
             elif self.pause or not self._request_list or len(self._link_requests) >= self.max_link:
                 time.sleep(0.1)
                 continue
-
             try:
                 request = self._request_list[0]
                 self._request_list.remove(request)
@@ -275,12 +290,24 @@ class Scheduler(HasNameObject, threading.Thread):
         self._add_request_log(request, 'To Retry')
 
         self._link_requests.remove(request)
+        self._wait_request_list.append(request)
+
         if wait > 0:
             time.sleep(wait)
+        if self.saving and self.pause:
+            return
+        if request not in self._wait_request_list:
+            Logger.error(f'Requests waiting to end are lost. {request}')
+            return
+
+        self._wait_request_list.remove(request)
         if jump_in_line:
             self._request_list.insert(0, request)
         else:
             self._request_list.append(request)
+
+    def get_tags_copy(self) -> dict:
+        return self._tags.copy()
 
     def get_tag(self, key: str, default=None) -> Any:
         """获取 tag。支持使用切片进行这个操作
@@ -320,25 +347,27 @@ class Scheduler(HasNameObject, threading.Thread):
     def __setitem__(self, key: str, value):
         self.set_tag(key, value)
 
-    def save(self, dir_path: str, encoding: str = 'utf-8', auto_continue: bool = False, fast: bool = False) -> NoReturn:
+    def save(self, dir_path: str = None, encoding: str = 'utf-8', auto_continue: bool = False, fast: bool = False) -> NoReturn:
         """ 保存调度器状态到一个目录。
         这包括等待请求列表、请求历史记录的md5（用于去重）、tags、管道和爬虫的唯一标识（读取时检查）
         配合 load 方法使用
         Args:
-            dir_path: 目标目录
-            encoding: 文件编码
+            dir_path: 目标目录，如果不指定，则会使用 start 方法的 load_from
+            encoding: 文件编码，默认 utf-8
             auto_continue: 保存完成后是否自动继续
             fast: 是否快速保存，这会取消当前正在进行的请求。
-                取消的请求不会放弃，会重新添加到待请求队列中
+                  取消的请求不会放弃，会重新添加到待请求队列中
         Warnings:
-            这个方法的实际效果是在 调度器 线程中执行的，所以保存会有延迟
+            这个方法的实际效果是在 调度器 线程中执行的，所以保存会有延迟。
+            这不会保存 web 页面中显示的 History Request 列表，也就是不会保存 request_log
         """
+        if dir_path is None:
+            dir_path = self.load_from
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
         if not os.path.isdir(dir_path):
-            raise MagicSaveError(f"Save dir '{dir_path}' not is a dir")
+            raise NotADirectoryError(f"Save dir '{dir_path}' not is a dir")
         Logger.info("Pause the scheduler, it will be saved after the existing request is completed")
-
         if fast:
             stops = []
             for lr in self._link_requests:
@@ -352,6 +381,11 @@ class Scheduler(HasNameObject, threading.Thread):
 
         self.pause = True
         self.saving = True
+
+        for request in self._wait_request_list:
+            self._request_list.append(request)
+        self._wait_request_list.clear()
+
         self.save_data = {
             'path': dir_path,
             'encoding': encoding,

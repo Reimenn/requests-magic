@@ -1,7 +1,4 @@
 """请求类和请求线程类
-
-Attributes:
-    default_headers (dict): 当请求没有指定 headers 时，会从这里copy一份，默认是空的。
 """
 import threading
 import time
@@ -9,7 +6,6 @@ import hashlib
 from typing import Callable, NoReturn, Dict, Any
 from .logger import Logger
 from .downloader import *
-from .exceptions import *
 from .utils import HasNameObject, getattr_in_module
 
 __FUCK_CIRCULAR_IMPORT = False

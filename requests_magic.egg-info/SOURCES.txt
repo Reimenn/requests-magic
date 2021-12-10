@@ -19,4 +19,3 @@ requests_magic.egg-info/requires.txt
 requests_magic.egg-info/top_level.txt
 requests_magic/web_view/command.html
 requests_magic/web_view/index.html
-test/test.py
