@@ -4,15 +4,15 @@
 import os
 import threading
 import time
-from .logger import Logger
-from .utils import HasNameObject
+from .mmlog import logger
+from .utils import get_log_name
 
 __FUCK_CIRCULAR_IMPORT = False
 if __FUCK_CIRCULAR_IMPORT:
     from .scheduler import Scheduler
 
 
-class Pipeline(HasNameObject, threading.Thread):
+class Pipeline:
     """管道基类，用来持久化数据，这是一个新线程
     """
 
@@ -27,7 +27,10 @@ class Pipeline(HasNameObject, threading.Thread):
         super().__init__()
         self.scheduler: 'Scheduler' = scheduler
         self.name = name
-        self.items = []
+        self._item_list = []
+
+    def __str__(self) -> str:
+        return get_log_name(self, True)
 
     def add_item(self, item):
         """ 添加新的需要持久化的数据
@@ -35,20 +38,23 @@ class Pipeline(HasNameObject, threading.Thread):
         Args:
             item:要持久化的数据
         """
-        self.items.append(item)
+        self._item_list.append(item)
+
+    def start(self):
+        threading.Thread(target=self.run).start()
 
     def run(self) -> None:
         """ 开启线程，反复监听待保存的 item
         """
         while True:
-            if self.items:
-                item = self.items[0]
-                del self.items[0]
+            if self._item_list:
+                item = self._item_list[0]
+                del self._item_list[0]
                 try:
                     self.save(item)
-                    Logger.info(f"{self} [SAVE ITEM {item.name} Finish]")
+                    logger.info_saveitem_item(f"{self} [SAVE ITEM {item.name} Finish]")
                 except Exception as e:
-                    Logger.error(f"{self} [SAVE ITEM {item.name} Error] {e}")
+                    logger.error(f"{self} [SAVE ITEM {item.name} Error] {e}")
                     raise e
             else:
                 time.sleep(0.1)
@@ -148,10 +154,10 @@ class SimpleFilePipeline(Pipeline):
             if self.auto_create_folder:
                 os.makedirs(path)
             else:
-                Logger.warning(f"{self} {path} path not exists")
+                logger.error_pipeline(f"{self} {path} path not exists")
                 return
         if not os.path.isdir(path):
-            Logger.warning(f"{self} {path} not is a dir")
+            logger.error_pipeline(f"{self} {path} not is a dir")
             return
         with open(file, self.mode, encoding=self.encoding, newline=self.newline) as f:
             f.write(str(item))

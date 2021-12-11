@@ -1,3 +1,27 @@
+## v1.5-beta
+
+2021年12月11日
+
+---
+
+#### 增加：
+
+- mmlog 模块，更适合爬虫项目的日志系统。
+
+#### 修改：
+
+- 移除了基于 logging 的日志模块
+
+- RequestThread 被重做成了 Request 中的方法。
+
+- Request 的 total_time 计时时长重新改成了 下载时长，不再包括调度时长。
+
+- 等待中的请求也会显示在 web view 的待请求列表中，它们在列表最下面
+
+- 对 Request 的内部方法做了封装，to_dict 将会根据一个 _dict_fields 元组保存字段
+
+- Pipeline 和 Scheduler 不再继承自 Thread 了，而是内部实例化了一个 Thread 启动
+
 ## v1.4-beta-2
 
 2021年12月10日

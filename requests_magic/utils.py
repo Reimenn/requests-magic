@@ -50,14 +50,16 @@ def getattr_in_module(module_name: str, func_name: str):
     return getattr(m, func_name)
 
 
-class HasNameObject:
-    """ 重写了 requests magic 风格的 __str__ 方法。
-    是 '[class_name: name]' 或 '[class_name]' 这样的字符串
-    """
-
-    def __str__(self) -> str:
-        cls_name = self.__class__.__name__
-        if hasattr(self, 'name') and self.name:
-            return f'[{cls_name}: {self.name}]'
+def get_log_name(obj, cls_name: bool = True) -> str:
+    cn = obj.__class__.__name__
+    if hasattr(obj, 'name'):
+        name = obj.name
+    else:
+        name = None
+    if cls_name:
+        if name:
+            return f'[{cn}-{name}]'
         else:
-            return f'[{cls_name}]'
+            return f'[{cn}]'
+    else:
+        return f'[{name}]' if name else ''

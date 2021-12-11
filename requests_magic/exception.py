@@ -1,0 +1,2 @@
+class ExistingIdentityError(Exception):
+    pass

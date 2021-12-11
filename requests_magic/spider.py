@@ -1,5 +1,5 @@
 from .request import Request
-from .utils import HasNameObject
+from .utils import get_log_name
 import requests
 
 __FUCK_CIRCULAR_IMPORT = False
@@ -7,7 +7,7 @@ if __FUCK_CIRCULAR_IMPORT:
     from .scheduler import Scheduler
 
 
-class Spider(HasNameObject):
+class Spider:
 
     def __init__(self, scheduler: 'Scheduler' = None, name: str = ""):
         """ 爬虫类，你不应该实例化我，应该继承我写一个你自己的爬虫
@@ -22,6 +22,9 @@ class Spider(HasNameObject):
         self.scheduler: 'Scheduler' = scheduler
         self.name = name
         self.default_headers: dict = {}
+
+    def __str__(self) -> str:
+        return get_log_name(self, True)
 
     def identity(self) -> str:
         """ 获取当前实例的唯一标识，中断续爬用这个表示获取当前爬虫

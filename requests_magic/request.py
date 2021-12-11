@@ -4,18 +4,31 @@ import threading
 import time
 import hashlib
 from typing import Callable, NoReturn, Dict, Any
-from .logger import Logger
+from .mmlog import logger
 from .downloader import *
-from .utils import HasNameObject, getattr_in_module
+from .utils import getattr_in_module,get_log_name
 
 __FUCK_CIRCULAR_IMPORT = False
 if __FUCK_CIRCULAR_IMPORT:
     from .scheduler import Scheduler
 
 
-class Request(HasNameObject):
+class Request:
     """表示一个请求，这里会自动创建 RequestThread
     """
+
+    # 会被持久化的字段，这些字段必须在 init 参数、self 字段中保持一致
+    _dict_fields = (
+        'name',
+        'url',
+        'method',
+        'data',
+        'tags',
+        'headers',
+        'time_out',
+        'time_out_wait',
+        'time_out_retry',
+    )
 
     def __init__(self, url: str, callback: Callable[[Any, 'Request'], NoReturn],
                  data: dict = None, method: str = 'GET', headers: dict = None,
@@ -54,43 +67,50 @@ class Request(HasNameObject):
         if headers is None:
             headers = callback.__self__.default_headers.copy()
 
+        # http
         self.url: str = url
         self.data: dict = data
         self.method: str = method
         self.headers: dict = headers
 
+        # scheduler
         self.callback: Callable[[Any, 'Request'], NoReturn] = callback
         self.downloader = downloader
         self.downloader_filter = downloader_filter
         self.tags: dict = tags
         self.scheduler = None
+        # get spider by callback
 
         self.spider = callback.__self__
         from .spider import Spider
         if not isinstance(self.spider, Spider):
             raise TypeError('callback must be a method in spider')
-
+        # preparse
         self.preparse = preparse
         if self.preparse is None:
             self.preparse = self.spider.preparse
-
+        # time
         self.start_time: float = -1
         self.total_time: float = -1
+        # time out
         self.time_out: float = time_out
         self.time_out_wait: float = time_out_wait
         self.time_out_retry: int = time_out_retry
 
         self.kwargs = kwargs
 
+        # Request self field
         self.result = None
         self.show_url = self.url if len(self.url) < 40 else '...' + self.url[-37:-1]
+        self._thread: threading.Thread = None
 
-        self.thread: RequestThread = None
+    def __str__(self) -> str:
+        return get_log_name(self,False)
 
     def is_requesting(self) -> bool:
         """ 是否正在请求中，根据是否存在下载线程判断
         """
-        return self.thread is not None
+        return self._thread is not None
 
     def is_finish(self) -> bool:
         """ 是否已经请求完成，根据是否有结果和 is_requesting 判断
@@ -100,13 +120,13 @@ class Request(HasNameObject):
     def start(self):
         """开始下载，自动创建 RequestThread，下载完成后会自动调用调度器的方法
         """
-        if self.thread:
-            Logger.error(f"{self} downloading, Can't start")
+        if self._thread:
+            logger.error(f"{self} downloading, Can't start")
             return
-        Logger.info(f"{self} [{self.method.upper()} START] {self.show_url}")
-        self.thread = RequestThread(self)
+        logger.info_request(f"{self} [{self.method.upper()} START] {self.show_url}")
+        self._thread = threading.Thread(target=self._request_thread)
         self.start_time = time.time()
-        self.thread.start()
+        self._thread.start()
 
     def md5(self) -> str:
         """根据某些属性计算自己的md5，
@@ -118,18 +138,18 @@ class Request(HasNameObject):
             f'{self.method};{self.url};{self.data};{self.time_out_retry}'.encode('utf-8')
         ).hexdigest()
 
-    def request_thread_error(self, error: BaseException) -> NoReturn:
-        if self.thread != threading.current_thread():
-            return
-
+    def _request_thread_error(self, error: Exception) -> NoReturn:
+        """ 当下载器或下载过滤器返回错误时调用。（在下载线程中调用）。
+        这会放弃这个请求。
+        """
         self.stop()
         self.scheduler.downloader_abandon(self)
-        Logger.error(f'{self} {error}')
+        logger.error(f'{self} {error}')
 
-    def request_thread_fail(self, operate: DownloaderFailOperate) -> NoReturn:
-        if self.thread != threading.current_thread():
-            return
-
+    def _request_thread_fail(self, operate: DownloaderFailOperate) -> NoReturn:
+        """ 当下载器或下载过滤器返回失败操作时调用。（在下载线程中调用）。
+        这会重试或放弃这个请求。
+        """
         self.stop()
         if isinstance(operate, Timeout):
             message = f'{self} Request is timeout ({self.time_out}s) to {self.url}. '
@@ -138,37 +158,70 @@ class Request(HasNameObject):
                     f'Try again in {self.time_out_wait} seconds. ({self.time_out_retry - 1} remaining)'
             else:
                 message += 'Gave up the request'
-            Logger.warning(message)
+            logger.warning(message)
             if self.time_out_retry > 0:
                 self.time_out_retry -= 1
                 # if self.time_out_wait > 0:
                 #     time.sleep(self.time_out_wait)
                 self.scheduler.downloader_retry(self, wait=self.time_out_wait)
         elif isinstance(operate, Retry):
-            Logger.warning(f'{self} Retry [{self.method.upper()}] {self.show_url} in {operate.wait} seconds')
+            logger.warning(f'{self} Retry [{self.method.upper()}] {self.show_url} in {operate.wait} seconds')
             # if operate.wait > 0:
             #     time.sleep(operate.wait)
             self.scheduler.downloader_retry(self, jump_in_line=operate.jump_in_line, wait=operate.wait)
         elif isinstance(operate, Abandon):
-            Logger.warning(f'{self} Abandon [{self.method.upper()}] {self.show_url}')
+            logger.warning(f'{self} Abandon [{self.method.upper()}] {self.show_url}')
             self.scheduler.downloader_abandon(self)
         elif isinstance(operate, Error):
-            Logger.error(f'{self} {operate.message}')
+            logger.error(f'{self} {operate.message}')
             self.scheduler.downloader_abandon(self)
 
-    def request_thread_finish(self, result) -> NoReturn:
-        if self.thread != threading.current_thread():
-            return
-
+    def _request_thread_finish(self, result: Any) -> NoReturn:
+        """ 当下载器或下载过滤器成功时调用。（在下载线程中调用）。
+        这会解析这个请求的结果。
+        """
         self.stop()
         self.result = result
-        Logger.info(f"{self} [{self.method.upper()} OVER {round(self.total_time, 2)}s] {self.show_url}")
+        logger.info_request(f"{self} [{self.method.upper()} OVER {round(self.total_time, 2)}s] {self.show_url}")
         self.scheduler.downloader_finish(self.result, self)
 
-    def stop(self) -> None:
-        """终止请求线程
+    def _request_thread(self) -> NoReturn:
+        """开始下载，这是新线程执行的方法
         """
-        self.thread = None
+        self.start_time = time.time()
+
+        # download
+        result = self.downloader(self)
+        if self._thread != threading.current_thread():
+            return
+        self.total_time = time.time() - self.start_time
+        if isinstance(result, DownloaderFailOperate):
+            self._request_thread_fail(result)
+            return
+        if isinstance(result, Exception):
+            self._request_thread_error(result)
+            return
+
+        # filter
+        result_filter = self.downloader_filter(result, self)
+        if self._thread != threading.current_thread():
+            return
+        if isinstance(result_filter, DownloaderFailOperate):
+            self._request_thread_fail(result_filter)
+            return
+        if isinstance(result_filter, Exception):
+            self._request_thread_error(result_filter)
+            return
+
+        self._request_thread_finish(result)
+
+    def stop(self) -> NoReturn:
+        """终止请求线程
+        Warnings:
+            这并不会真正停止请求线程，只是让正在进行中的线程不再返回结果。
+            这不是放弃请求，stop 后这个请求仍然会留在调度器的 link_request 中。
+        """
+        self._thread = None
 
     def to_dict(self) -> Dict[str, Union[int, float, str]]:
         """把请求转换成用字符串表示的 Dict，可以保存起来以后再读取再请求
@@ -176,28 +229,18 @@ class Request(HasNameObject):
         Returns:
             Dict
         Warnings:
-            这是个测试功能，不一定稳定，要配合 from_json 方法使用
             这不会保存下载状态和结果，并且 Request 的 **kwargs 参数会以简单的 json.dumps 形式保存，可能会存在问题。
-            callback、downloader等属性会被保存成字符串，在读取时利用 importlib 模块加载。
-            callback 和 preparse 必须是爬虫中的方法
-            downloader 和 downloader_filter 必须是某个模块中的顶级方法
+            callback、downloader 等属性会被保存成字符串，在读取时利用 importlib 模块加载。
+            callback 和 preparse 必须是爬虫中的方法。
+            downloader 和 downloader_filter 必须是某个模块中的顶级方法。
         """
         if self.is_requesting():
-            Logger.warning(
+            logger.warning(
                 "The downloading state will not be retained after the request being downloaded is converted to json")
         if self.is_finish():
-            Logger.warning(
+            logger.warning(
                 "The downloaded result will not be retained after the request being downloaded is converted to json")
         json_dict = {
-            'name': self.name,
-            'url': self.url,
-            'method': self.method,
-            'data': self.data,
-            'tags': self.tags,
-            'headers': self.headers,
-            'time_out': self.time_out,
-            'time_out_wait': self.time_out_wait,
-            'time_out_retry': self.time_out_retry,
             'save_tags': {
                 'downloader':
                     (self.downloader.__module__, self.downloader.__name__),
@@ -209,67 +252,34 @@ class Request(HasNameObject):
                 'kwargs': self.kwargs,
             }
         }
+        for field in Request._dict_fields:
+            json_dict[field] = getattr(self, field)
         return json_dict
 
     @staticmethod
-    def from_dict(json_dict: Dict[str, Union[int, float, str, dict]], scheduler: 'Scheduler') -> 'Request':
+    def from_dict(data_dict: Dict[str, Union[int, float, str, dict]], scheduler: 'Scheduler') -> 'Request':
         """ 从Dict中解析出新的 Request
 
         Args:
             scheduler: 需要一个调度器分配爬虫、解析函数等
-            json_dict: json 格式的 dict
+            data_dict: 源 dict
 
         Returns:
             解析得到的请求
 
         Warnings:
-            这是个测试功能，不一定稳定，要配合 to_dict 方法使用
-            其他警告查看 to_dict 方法文档
+            因为涉及到反射，所以不要加载不信任的请求。
+            其他警告查看 to_dict 方法文档。
         """
-        save_tags = json_dict['save_tags']
-        del json_dict['save_tags']
+        save_tags = data_dict['save_tags']
+        del data_dict['save_tags']
         spider = scheduler.get_spider_by_identity(save_tags['spider'])
-        json_dict['downloader'] = getattr_in_module(*save_tags['downloader'])
-        json_dict['downloader_filter'] = getattr_in_module(*save_tags['downloader_filter'])
-        json_dict['callback'] = getattr(spider, save_tags['callback'])
-        json_dict['preparse'] = getattr(spider, save_tags['preparse'])
+        data_dict['downloader'] = getattr_in_module(*save_tags['downloader'])
+        data_dict['downloader_filter'] = getattr_in_module(*save_tags['downloader_filter'])
+        data_dict['callback'] = getattr(spider, save_tags['callback'])
+        data_dict['preparse'] = getattr(spider, save_tags['preparse'])
 
-        result: Request = Request(**json_dict)
+        result: Request = Request(**data_dict)
         result.kwargs = save_tags['kwargs']
         result.spider = spider
         return result
-
-
-class RequestThread(threading.Thread):
-    """请求的下载线程
-    """
-
-    def __init__(self, request: Request):
-        """请求的下载线程
-
-        Args:
-            request: 请求
-        """
-        super(RequestThread, self).__init__()
-        self.request = request
-
-    def run(self) -> None:
-        """开始下载
-        """
-
-        result = self.request.downloader(self.request)
-        self.request.total_time = time.time() - self.request.start_time
-        if isinstance(result, DownloaderFailOperate):
-            self.request.request_thread_fail(result)
-            return
-        if isinstance(result, BaseException):
-            self.request.request_thread_error(result)
-            return
-        result_filter = self.request.downloader_filter(result, self.request)
-        if isinstance(result_filter, DownloaderFailOperate):
-            self.request.request_thread_fail(result_filter)
-            return
-        if isinstance(result_filter, BaseException):
-            self.request.request_thread_error(result_filter)
-            return
-        self.request.request_thread_finish(result)
