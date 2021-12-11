@@ -16,4 +16,4 @@ class TestPipeline(rm.Pipeline):
         pass
 
 
-rm.quick_start(TestSpider(), TestPipeline())
+rm.Scheduler(TestSpider, TestPipeline).start()
