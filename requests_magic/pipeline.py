@@ -45,6 +45,8 @@ class Pipeline:
         return self.thread.is_alive()
 
     def start(self):
+        if self.is_alive():
+            return
         self.thread.start()
 
     def run(self) -> None:

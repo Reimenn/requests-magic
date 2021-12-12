@@ -3,7 +3,7 @@ import os
 
 setup(
     name='requests_magic',
-    version='v1.5',
+    version='v1.5.1',
     author='Rika',
     author_email='2293840045@qq.com',
     packages=['requests_magic'],
