@@ -102,6 +102,8 @@ class Scheduler:
 
         self.load_from: str = ''
 
+        self.thread = threading.Thread(target=self.run)
+
     # add
 
     def add_request(self, request: Request, from_spider: Spider) -> NoReturn:
@@ -191,6 +193,10 @@ class Scheduler:
             load_encoding: 读取状态的编码，默认 utf-8
             load_from: 从某个文件夹中读取爬取状态，默认 None 或目录不存在则表示不读取
         """
+
+        if self.thread.is_alive():
+            return
+
         for pipeline in self._pipelines.values():
             pipeline.start()
 
@@ -199,13 +205,13 @@ class Scheduler:
         if load_from and os.path.exists(load_from):
             self.load(load_from, load_encoding)
             if only_load:
-                threading.Thread(target=self.run).start()
+                self.thread.start()
                 return
 
         for spider in self._spiders.values():
             call = spider.start()
             self.add_callback_result(call, from_spider=spider)
-        threading.Thread(target=self.run).start()
+        self.thread.start()
 
     def run(self) -> NoReturn:
         """ 调度器循环

@@ -3,9 +3,9 @@ setup.py
 requests_magic/__init__.py
 requests_magic/bottle.py
 requests_magic/downloader.py
-requests_magic/exceptions.py
+requests_magic/exception.py
 requests_magic/item.py
-requests_magic/logger.py
+requests_magic/mmlog.py
 requests_magic/pipeline.py
 requests_magic/request.py
 requests_magic/scheduler.py

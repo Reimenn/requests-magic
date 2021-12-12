@@ -28,6 +28,7 @@ class Pipeline:
         self.scheduler: 'Scheduler' = scheduler
         self.name = name
         self._item_list = []
+        self.thread = threading.Thread(target=self.run)
 
     def __str__(self) -> str:
         return get_log_name(self, True)
@@ -40,8 +41,11 @@ class Pipeline:
         """
         self._item_list.append(item)
 
+    def is_alive(self) -> bool:
+        return self.thread.is_alive()
+
     def start(self):
-        threading.Thread(target=self.run).start()
+        self.thread.start()
 
     def run(self) -> None:
         """ 开启线程，反复监听待保存的 item
