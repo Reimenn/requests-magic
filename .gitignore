@@ -1,4 +1,5 @@
 .idea
+requests_magic.egg-info
 build
 dist
 venv
