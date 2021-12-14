@@ -4,9 +4,10 @@ import importlib
 import threading
 import time
 from typing import Callable, NoReturn
+from .request import Request
 
 
-def request_to_requests_kwargs(request) -> dict:
+def request_to_requests_kwargs(request: "Request") -> dict:
     """根据 Request 生成 requests.request 会用到的参数字典
 
     Args:
@@ -17,17 +18,15 @@ def request_to_requests_kwargs(request) -> dict:
     result: dict = {
         'method': request.method,
         'url': request.url,
-        'timeout': request.time_out
+        'timeout': request.time_out,
+        'params': request.params
     }
 
     if request.data:
-        if request.method == 'GET':
-            result['params'] = request.data
+        if isinstance(request.data, dict):
+            result['json'] = request.data
         else:
-            if isinstance(request.data, dict):
-                result['json'] = request.data
-            else:
-                result['data'] = request.data
+            result['data'] = request.data
 
     if request.headers:
         result['headers'] = request.headers

@@ -21,6 +21,7 @@ class Request:
         'url',
         'method',
         'data',
+        'params'
         'tags',
         'headers',
         'time_out',
@@ -30,7 +31,7 @@ class Request:
     )
 
     def __init__(self, url: str, callback: Callable[[Any, 'Request'], NoReturn],
-                 data: dict = None, method: str = 'GET', headers: dict = None,
+                 data: dict = None, params: dict = None, method: str = 'GET', headers: dict = None,
                  time_out: int = 10, time_out_wait: int = 15, time_out_retry: int = 3,
                  tags: dict = None, wait: float = 0,
                  downloader: Callable[['Request'], NoReturn] = requests_downloader,
@@ -44,6 +45,7 @@ class Request:
             url: 请求的目标地址
             callback: 回调解析函数，这必须是爬虫类中的方法
             data: 请求数据
+            params: 请求查询数据
             method: 请求方法，默认：GET
             headers: 请求头，如果为空，则从 requests_magic.request.default_headers copy一份
             time_out: 超时时限，默认：10秒
@@ -64,12 +66,15 @@ class Request:
             tags = {}
         if data is None:
             data = {}
+        if params is None:
+            params = {}
         if headers is None:
             headers = callback.__self__.default_headers.copy()
 
         # http
         self.url: str = url
         self.data: dict = data
+        self.params: dict = params
         self.method: str = method
         self.headers: dict = headers
 
