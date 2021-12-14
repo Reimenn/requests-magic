@@ -10,6 +10,7 @@ from .utils import get_log_name
 __FUCK_CIRCULAR_IMPORT = False
 if __FUCK_CIRCULAR_IMPORT:
     from .scheduler import Scheduler
+    from .item import Item
 
 
 class Pipeline:
@@ -22,18 +23,19 @@ class Pipeline:
         Args:
             name: 管道的名字，希望能帮助 debug
         Warnings:
-            不要实例化这个类，应该继承Pipeline实现你自己的持久化
+            不要实例化这个类，应该继承Pipeline实现你自己的持久化.
+            可重写的方法有 save 和 acceptable
         """
         super().__init__()
         self.scheduler: 'Scheduler' = scheduler
         self.name = name
         self._item_list = []
-        self.thread = threading.Thread(target=self.run)
+        self._thread = threading.Thread(target=self._run)
 
     def __str__(self) -> str:
         return get_log_name(self, True)
 
-    def add_item(self, item):
+    def add_item(self, item: 'Item'):
         """ 添加新的需要持久化的数据
 
         Args:
@@ -41,16 +43,29 @@ class Pipeline:
         """
         self._item_list.append(item)
 
+    @property
     def is_running(self) -> bool:
-        return self.thread.is_alive()
+        """ 当前 Pipeline 是否正在运行中.
+        这返回的是 Pipeline 线程的运行状态.
+        """
+
+        return self._thread.is_alive()
+
+    @property
+    def is_saving(self) -> bool:
+        """ 获取 Pipeline 是否正在保存.
+        如果保存的 Item 队列为空则返回True.
+        """
+
+        return bool(self._item_list)
 
     def start(self):
-        if self.is_running():
+        if self.is_running:
             logger.WARNING(f"{self} Pipeline is running")
             return
-        self.thread.start()
+        self._thread.start()
 
-    def run(self) -> None:
+    def _run(self) -> None:
         """ 开启线程，反复监听待保存的 item
         """
         while True:
@@ -66,7 +81,7 @@ class Pipeline:
             else:
                 time.sleep(0.1)
 
-    def acceptable(self, item) -> bool:
+    def acceptable(self, item: 'Item') -> bool:
         """ 判断是否可以接收某个 item。
         调度器会根据这里的返回值判断是否继续用这个管道保存这个item，
         重写这里实现你自己的判断
@@ -80,7 +95,7 @@ class Pipeline:
         """
         return True
 
-    def save(self, item):
+    def save(self, item: 'Item'):
         """真正的持久化方法，
         重写这里用你的方式保存数据
 
@@ -92,6 +107,7 @@ class Pipeline:
         """
         pass
 
+    @property
     def identity(self) -> str:
         """ 获取当前实例的唯一标识，中断续爬用这个表示获取当前管道
         Warnings:

@@ -20,19 +20,27 @@ class Scheduler:
     """调度器，核心组件，负责请求管理与 item 转发
     """
 
-    def __init__(self, spider_class, pipeline_class=Pipeline, tags: Dict[str, Any] = None,
-                 max_link: int = 12, request_interval: float = 0, distinct: bool = True, start_pause: bool = False,
+    def __init__(self, spiders=None, pipelines=None,
+                 call_start_spider: bool = True,
+                 auto_start_pipeline: bool = True,
+                 tags: Dict[str, Any] = None,
+                 max_link: int = 12,
+                 request_interval: float = 0,
+                 distinct: bool = True,
+                 start_pause: bool = False,
                  web_view=None):
         """调度器，核心组件，爬虫的开始，负责请求管理与 item 转发
 
         Args:
-
-            spider_class: 爬虫类或爬虫类们(list)，不要传递Spider实例进来
-            pipeline_class: 管道类或管道类们(list)，不要传递Pipeline实例进来
-            tags: 可以用来保存额外信息，例如纪录爬虫状态，可以由管道或爬虫更改
-            max_link: 最大连接数，默认：12
-            request_interval: 请求间隔时间，默认：0秒
-            distinct: 是否开启去重，默认开启
+            spiders: spider 或 spider list. 可以是 spider 实例也可以是 spider class
+            pipelines: pipeline 或 pipeline list. 可以是 pipeline 实例也可以是 pipeline class
+            call_start_spider: 是否调用爬虫实例们的start方法. 如果 spider是class 则忽略这个参数强制调用
+            auto_start_pipeline: 是否自动开启 pipeline, 如果 pipeline 是 class 则忽略这个参数强制开启
+            tags: 可以用来保存额外信息，例如纪录爬虫状态，可以由管道或爬虫更改.
+            max_link: 最大连接数，默认：12.
+            request_interval: 请求间隔时间，默认：0秒.
+            distinct: 是否开启去重，默认开启.
+            start_pause: 调度器开启时是否处于暂停状态.
             web_view: 可在浏览器上查看的页面，默认关闭（None），可以设置为一个端口号，或是一个包含ip与端口的元组
 
         Warnings:
@@ -51,25 +59,27 @@ class Scheduler:
 
         # 爬虫们
         self._spiders: Dict[str, Spider] = {}
-        if not isinstance(spider_class, Sequence):
-            spider_class = [spider_class]
-        for i in spider_class:
-            spider: Spider = i(scheduler=self)
-            identity = spider.identity()
-            if identity in self._spiders:
-                logger.warning(f'{spider} Spider with the same identity will be overwritten')
-            self._spiders[identity] = spider
+        if not isinstance(spiders, Sequence):
+            spiders = [spiders]
+        for i in spiders:
+            if isinstance(i, Spider):
+                self.add_spider(i, call_start=call_start_spider)
+            elif isinstance(i, type):
+                self.add_spider(i(scheduler=self), call_start=True)
+            else:
+                logger.error(f"[{i}] not is a spider or spider class")
 
         # 管道们
         self._pipelines: Dict[str, Pipeline] = {}
-        if not isinstance(pipeline_class, Sequence):
-            pipeline_class = [pipeline_class]
-        for i in pipeline_class:
-            pipeline: Pipeline = i(scheduler=self)
-            identity = pipeline.identity()
-            if identity in self._pipelines:
-                logger.warning(f'{pipeline} pipeline with the same identity will be overwritten')
-            self._pipelines[identity] = pipeline
+        if not isinstance(pipelines, Sequence):
+            pipelines = [pipelines]
+        for i in pipelines:
+            if isinstance(i, Pipeline):
+                self.add_pipeline(i, auto_start=auto_start_pipeline)
+            elif isinstance(i, type):
+                self.add_pipeline(i(scheduler=self), auto_start=True)
+            else:
+                logger.error(f"[{i}] not is a pipeline or pipeline class")
 
         # 请求队列
         self._request_list: List[Request] = []
@@ -179,7 +189,7 @@ class Scheduler:
         Raises:
             ExistingIdentityError
         """
-        identity = spider.identity()
+        identity = spider.identity
         self._other_lock.acquire()
         if identity in self._spiders:
             self._other_lock.release()
@@ -189,22 +199,23 @@ class Scheduler:
         self._spiders[identity] = spider
         self._other_lock.release()
 
-    def add_pipeline(self, pipeline: Pipeline) -> NoReturn:
+    def add_pipeline(self, pipeline: Pipeline, auto_start: bool = True) -> NoReturn:
         """ 添加一个已经实例化好的 pipeline。
         如果管道线程没有运行则会尝试 start
 
         Args:
             pipeline: 管道实例（注意不是 class）
+            auto_start: 是否尝试开启管道
 
         Raises:
             ExistingIdentityError
         """
-        identity = pipeline.identity()
+        identity = pipeline.identity
         self._other_lock.acquire()
         if identity in self._pipelines:
             self._other_lock.release()
             raise ExistingIdentityError(identity)
-        if not pipeline.is_running():
+        if not pipeline.is_running and auto_start:
             pipeline.start()
         self._pipelines[identity] = pipeline
         self._other_lock.release()
@@ -442,7 +453,7 @@ class Scheduler:
                 'data': r.data.copy(),
                 'headers': r.headers.copy(),
                 'tags': r.tags.copy(),
-                'spider': r.spider.identity(),
+                'spider': r.spider.identity,
                 'downloader': r.downloader.__name__,
                 'downloader_filter': r.downloader_filter.__name__,
                 'wait': r.wait
@@ -465,7 +476,7 @@ class Scheduler:
                 'data': r.data.copy(),
                 'headers': r.headers.copy(),
                 'tags': r.tags.copy(),
-                'spider': r.spider.identity(),
+                'spider': r.spider.identity,
                 'downloader': r.downloader.__name__,
                 'downloader_filter': r.downloader_filter.__name__,
                 'start_time': r.start_time
@@ -491,7 +502,7 @@ class Scheduler:
             'state': state,
             'start_time': request.start_time,
             'total_time': request.total_time,
-            'spider': request.spider.identity()
+            'spider': request.spider.identity
         })
 
     # save and load

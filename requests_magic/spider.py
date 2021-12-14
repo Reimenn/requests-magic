@@ -26,6 +26,7 @@ class Spider:
     def __str__(self) -> str:
         return get_log_name(self, True)
 
+    @property
     def identity(self) -> str:
         """ 获取当前实例的唯一标识，中断续爬用这个表示获取当前爬虫
         Warnings:

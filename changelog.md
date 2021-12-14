@@ -4,13 +4,27 @@
 
 ---
 
+#### 添加:
+
+- 管道可以通过 is_saving 获取当前是否需要保存
+
+- 管道和Spider的一些获取状态的方法改成了封装的 property
+
 #### 修改：
 
 - 给调度器增加了请求队列锁和一个添加 spider 和 pipeline 的锁。
 
 > 原有的无锁设计可能会在去重模式下仍然下载重复的链接
 
-- 取消了调度器的 set_tag 方法, 并加入了对 in 运算符的支持, get_teg 方法支持设置默认值. 同时取消了 tags 锁. 
+- 取消了调度器的 set_tag 方法, 并加入了对 in 运算符的支持, get_teg 方法支持设置默认值. 同时取消了 tags 锁.
+
+- 管道不再对外暴露 thread 属性
+
+- 调度器实例化时可以不再传递任何Spider了.
+
+- 调度器的实例化参数中, Spider 和 Pipeline 可以传递实例了, 如果传递的是实例则使用 add_spider 或 add_pipeline 方法.
+
+- 调度器的 add_pipeline 方法添加了 auto_start 方法
 
 ## v1.6-beta
 

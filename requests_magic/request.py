@@ -253,7 +253,7 @@ class Request:
                     (self.downloader_filter.__module__, self.downloader_filter.__name__),
                 'callback': self.callback.__name__,
                 'preparse': self.preparse.__name__,
-                'spider': self.spider.identity(),
+                'spider': self.spider.identity,
                 'kwargs': self.kwargs,
             }
         }
