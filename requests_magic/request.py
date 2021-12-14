@@ -1,12 +1,10 @@
 """请求类和请求线程类
 """
-import threading
-import time
 import hashlib
 from typing import Callable, NoReturn, Dict, Any
 from .mmlog import logger
 from .downloader import *
-from .utils import getattr_in_module,get_log_name
+from .utils import getattr_in_module, get_log_name
 
 __FUCK_CIRCULAR_IMPORT = False
 if __FUCK_CIRCULAR_IMPORT:
@@ -28,12 +26,13 @@ class Request:
         'time_out',
         'time_out_wait',
         'time_out_retry',
+        'wait'
     )
 
     def __init__(self, url: str, callback: Callable[[Any, 'Request'], NoReturn],
                  data: dict = None, method: str = 'GET', headers: dict = None,
                  time_out: int = 10, time_out_wait: int = 15, time_out_retry: int = 3,
-                 tags: dict = None,
+                 tags: dict = None, wait: float = 0,
                  downloader: Callable[['Request'], NoReturn] = requests_downloader,
                  downloader_filter: Callable[['Result', 'Request'], NoReturn] = requests_downloader_filter,
                  preparse: Callable[['Result', 'Request'], NoReturn] = None,
@@ -59,6 +58,7 @@ class Request:
         """
         super().__init__()
 
+        self.wait = wait
         self.name = name
         if tags is None:
             tags = {}
@@ -105,7 +105,7 @@ class Request:
         self._thread: threading.Thread = None
 
     def __str__(self) -> str:
-        return get_log_name(self,False)
+        return get_log_name(self, False)
 
     def is_requesting(self) -> bool:
         """ 是否正在请求中，根据是否存在下载线程判断

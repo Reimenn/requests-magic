@@ -57,20 +57,18 @@ class SchedulerWebView(threading.Thread):
     def index(self) -> str:
         """ 首页 view
         """
-        if self.scheduler.is_saving():
+        if self.scheduler.is_saving:
             return command_template.render(state='Saving', message='wait...')
         log = self.scheduler.get_request_log_info()
         pr = self.scheduler.get_pending_request_info()
         lr = self.scheduler.get_link_request_info()
-        wr = self.scheduler.get_wait_request_info()
         data = {
             'log': log,
             'pr': pr,
             'lr': lr,
-            'wr': wr,
             'time': time.time(),
-            'pause': self.scheduler.pause,
-            'saving': self.scheduler.is_saving(),
+            'pause': self.scheduler.is_pause,
+            'saving': self.scheduler.is_saving,
             'tags': self.scheduler.get_tags_copy(),
             'load_from': self.scheduler.load_from
         }
@@ -87,9 +85,9 @@ class SchedulerWebView(threading.Thread):
         }
         try:
             if args == 'pause':
-                self.scheduler.pause = True
+                self.scheduler.pause()
             elif args == 'continue':
-                self.scheduler.pause = False
+                self.scheduler.unpause()
             elif args == 'save':
                 save_path: str = str(request.query.path)
                 fast: bool = str(request.query.fast) == 'on'

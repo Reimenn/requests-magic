@@ -41,11 +41,12 @@ class Pipeline:
         """
         self._item_list.append(item)
 
-    def is_alive(self) -> bool:
+    def is_running(self) -> bool:
         return self.thread.is_alive()
 
     def start(self):
-        if self.is_alive():
+        if self.is_running():
+            logger.WARNING(f"{self} Pipeline is running")
             return
         self.thread.start()
 
@@ -55,7 +56,7 @@ class Pipeline:
         while True:
             if self._item_list:
                 item = self._item_list[0]
-                del self._item_list[0]
+                self._item_list.remove(item)
                 try:
                     self.save(item)
                     logger.info_saveitem_item(f"{self} [SAVE ITEM {item.name} Finish]")

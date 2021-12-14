@@ -1,9 +1,11 @@
 """ mmlog 模块，希望能更适合爬虫
 """
-
+import threading
+from collections import namedtuple
 from typing import List
 import sys
 import datetime
+import time
 
 
 class LoggerHandler:
@@ -79,16 +81,33 @@ class FileHandler(LoggerHandler):
         self.file.flush()
 
 
-class Logger:
+Log = namedtuple('log', ['tags', 'message'])
+
+
+class Logger(threading.Thread):
     def __init__(self):
+        super().__init__()
         self.handlers: List[LoggerHandler] = []
         self.to_upper: bool = True
+        self.log_queue: List[Log] = []
+
+    def run(self) -> None:
+        while True:
+            if self.log_queue:
+                log = self.log_queue[0]
+                self.log_queue.remove(log)
+                tags = log.tags
+                for handler in self.handlers:
+                    if handler.acceptable(tags):
+                        formatted = handler.formatter(tags, log.message)
+                        handler.on_log(tags, formatted)
+            else:
+                time.sleep(0.1)
 
     def log(self, tags: List[str], message):
-        for handler in self.handlers:
-            if handler.acceptable(tags):
-                formatted = handler.formatter(tags, message)
-                handler.on_log(tags, formatted)
+        if not self.is_alive():
+            self.start()
+        self.log_queue.append(Log(tags=tags, message=message))
 
     def __getattr__(self, item: str):
         tags = item.split('_')

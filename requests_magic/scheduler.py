@@ -1,8 +1,8 @@
 import json
 import os.path
 from collections import Generator
-from typing import Sequence, List, NoReturn, Dict, Any
-
+from typing import Sequence, List, NoReturn, Dict, Any, Optional, Callable, Iterable, Mapping
+from dataclasses import dataclass
 from .request import Request
 from .item import Item
 from .spider import Spider
@@ -13,13 +13,11 @@ import threading
 
 import time
 
+from .utils import Looper
+
 
 class Scheduler:
     """调度器，核心组件，负责请求管理与 item 转发
-
-    Attributes:
-        pause: 是否暂停，如果是，则不会发送新请求
-        _link_requests: 正在下载中的请求
     """
 
     def __init__(self, spider_class, pipeline_class=Pipeline, tags: Dict[str, Any] = None,
@@ -46,7 +44,7 @@ class Scheduler:
         self.request_interval: float = request_interval
 
         # tags
-        self._tags_lock = threading.Lock()
+
         if not tags:
             tags = {}
         self._tags = tags.copy()
@@ -77,17 +75,20 @@ class Scheduler:
         self._request_list: List[Request] = []
         # 正在请求中的请求
         self._link_requests: List[Request] = []
-        # 重试、等待中的请求
-        self._wait_request_list: List[Request] = []
+        # 请求冷却剩余时间
+        self._request_wait_time: float = 0
         # 添加过的请求的 MD5
         self._requests_md5: List[str] = []
+        # 响应队列
+        self._response_list: List[tuple] = []
+
         # 是否暂停了
-        self.pause: bool = start_pause
+        self._pause: bool = start_pause
         # 是否在保存中
         self._saving: bool = False
-        self.save_data: dict = {}
         # 请求纪录，只保留一些基本信息（url，method，时间，结果状态码，spider）
         self.request_log = []
+
         # web view
         if web_view:
             port = 5012
@@ -99,10 +100,16 @@ class Scheduler:
                 port = web_view
             from .webview import SchedulerWebView
             SchedulerWebView(self, host, port).start()
-
+        #
         self.load_from: str = ''
 
-        self.thread = threading.Thread(target=self.run)
+        # looper
+        self.request_looper = Looper(target=self._request_loop)
+        self.response_looper = Looper(target=self._response_loop)
+
+        # lock
+        self._request_list_lock = threading.Lock()
+        self._other_lock = threading.Lock()
 
     # add
 
@@ -111,16 +118,20 @@ class Scheduler:
 
         Args:
             request: 请求
-            from_spider: 产生请求的爬虫
+            from_spider: 产生请求的 Spider
         """
         md5: str = request.md5()
+        # lock
+        self._request_list_lock.acquire()
         if self.distinct and md5 in self._requests_md5:
             logger.info_repetated(f'Repeated request: {request} {request.show_url}')
+            self._request_list_lock.release()
             return
         request.spider = from_spider
         request.scheduler = self
-        self._request_list.append(request)
         self._requests_md5.append(md5)
+        self._request_list.append(request)
+        self._request_list_lock.release()
 
     def add_item(self, item: Item, from_spider: Spider) -> NoReturn:
         """ 添加一个新的 Item，这会转发给每个管道
@@ -160,30 +171,73 @@ class Scheduler:
 
     def add_spider(self, spider: Spider, call_start: bool = False) -> NoReturn:
         """ 添加一个已经实例化好的 spider.
+
+        Args:
+            spider: spider 实例（注意不是 class）
+            call_start: 是否执行爬虫的 start 方法
+
         Raises:
             ExistingIdentityError
         """
         identity = spider.identity()
+        self._other_lock.acquire()
         if identity in self._spiders:
+            self._other_lock.release()
             raise ExistingIdentityError(identity)
         if call_start:
             self.add_callback_result(spider.start(), spider)
-
         self._spiders[identity] = spider
+        self._other_lock.release()
 
     def add_pipeline(self, pipeline: Pipeline) -> NoReturn:
-        """ 添加一个已经实例化好的 pipeline.
+        """ 添加一个已经实例化好的 pipeline。
+        如果管道线程没有运行则会尝试 start
+
+        Args:
+            pipeline: 管道实例（注意不是 class）
+
         Raises:
             ExistingIdentityError
         """
         identity = pipeline.identity()
+        self._other_lock.acquire()
         if identity in self._pipelines:
+            self._other_lock.release()
             raise ExistingIdentityError(identity)
-        if not pipeline.is_alive():
+        if not pipeline.is_running():
             pipeline.start()
         self._pipelines[identity] = pipeline
+        self._other_lock.release()
 
     # thread
+    def _request_loop(self, delta_time: float):
+        self._request_wait_time = max(self._request_wait_time - delta_time, 0)
+        for r in self._request_list.copy():
+            # time
+            r.wait = max(r.wait - delta_time, 0)
+            if r.wait > 0:
+                continue
+            # new link
+            if self._request_wait_time <= 0 and len(self._link_requests) < self.max_link:
+                self._request_list.remove(r)
+                self._link_requests.append(r)
+                r.start()
+                # wait
+                self._request_wait_time = self.request_interval
+
+    def _response_loop(self, delta_time: float):
+        for r in self._response_list.copy():
+            response = r[0]
+            request: Request = r[1]
+            try:
+                result = request.preparse(response, request)
+                call = request.callback(result, request)
+            except Exception as e:
+                logger.ERROR(f"{request.spider} - {request} Error: {e}")
+                return
+            self.add_callback_result(call, request.spider)
+            # remove
+            self._response_list.remove(r)
 
     def start(self, load_from: str = None, load_encoding: str = 'utf-8', only_load: bool = True) -> NoReturn:
         """ 运行调度器，这会开启管道，然后执行爬虫的 start 方法
@@ -194,7 +248,8 @@ class Scheduler:
             load_from: 从某个文件夹中读取爬取状态，默认 None 或目录不存在则表示不读取
         """
 
-        if self.thread.is_alive():
+        if self.is_running:
+            logger.WARNING_SCHEDULER("Scheduler is running")
             return
 
         for pipeline in self._pipelines.values():
@@ -205,69 +260,15 @@ class Scheduler:
         if load_from and os.path.exists(load_from):
             self.load(load_from, load_encoding)
             if only_load:
-                self.thread.start()
+                self.request_looper.start()
+                self.response_looper.start()
                 return
 
         for spider in self._spiders.values():
             call = spider.start()
             self.add_callback_result(call, from_spider=spider)
-        self.thread.start()
-
-    def run(self) -> NoReturn:
-        """ 调度器循环
-        """
-        while True:
-            if self.pause and self._saving:
-                while self.is_requesting():
-                    time.sleep(0.1)
-                encoding = self.save_data['encoding']
-                path = self.save_data['path']
-                auto_continue: bool = self.save_data['auto_continue']
-                data = self.save_data['data']
-                for d in data:
-                    file_name: str = ''
-                    content: str = ''
-                    if d == 'md5':
-                        file_name = 'md5.txt'
-                        content = '\n'.join(self._requests_md5)
-                    elif d == 'tags':
-                        file_name = 'tags.json'
-                        content = json.dumps(self._tags, ensure_ascii=False)
-                    elif d == 'spider_list':
-                        file_name = 'spider_list.json'
-                        content = json.dumps(list(self._spiders.keys()), ensure_ascii=False)
-                    elif d == 'pipeline_list':
-                        file_name = 'pipeline_list.json'
-                        content = json.dumps(list(self._pipelines.keys()), ensure_ascii=False)
-                    elif d == 'request_list':
-                        file_name = 'request_list.json'
-                        result = []
-                        for r in self._request_list:
-                            result.append(r.to_dict())
-                        content = json.dumps(result, ensure_ascii=False)
-                    else:
-                        logger.error(f"Can't handle save {d}")
-                        continue
-                    with open(os.path.join(path, file_name), 'w', encoding=encoding) as f:
-                        f.write(content)
-                    logger.info_scheduler(f"save {file_name} finish")
-                if auto_continue:
-                    self.pause = False
-                self._saving = False
-                continue
-            elif self.pause or not self._request_list or len(self._link_requests) >= self.max_link:
-                time.sleep(0.1)
-                continue
-            try:
-                request = self._request_list[0]
-                self._request_list.remove(request)
-                self._link_requests.append(request)
-                request.start()
-                # rest
-                if self.request_interval > 0:
-                    time.sleep(self.request_interval)
-            except Exception as e:
-                logger.error(f'[Scheduler] {e}')
+        self.request_looper.start()
+        self.response_looper.start()
 
     # downloader
 
@@ -278,18 +279,15 @@ class Scheduler:
         if request not in self._link_requests:
             logger.error(f"The completed download is not in link_request list. {request}")
             return
-        self._link_requests.remove(request)
-
+        # append response
+        self._response_list.append((result, request))
         # log
         state = 'OK'
         if hasattr(result, 'status_code'):
             state += ' ' + str(result.status_code)
         self._add_request_log(request, state)
-
-        # parse
-        result = request.preparse(result, request)
-        call = request.callback(result, request)
-        self.add_callback_result(call, request.spider)
+        # remove
+        self._link_requests.remove(request)
 
     def downloader_abandon(self, request: Request) -> NoReturn:
         """放弃一个请求
@@ -300,7 +298,6 @@ class Scheduler:
 
         # log
         self._add_request_log(request, 'Abandon')
-
         self._link_requests.remove(request)
 
     def downloader_retry(self, request: Request, jump_in_line: bool = False, wait: float = 0) -> NoReturn:
@@ -315,19 +312,10 @@ class Scheduler:
 
         # log
         self._add_request_log(request, 'To Retry')
-
+        # remove and wait
         self._link_requests.remove(request)
-        self._wait_request_list.append(request)
-
-        if wait > 0:
-            time.sleep(wait)
-        if self._saving and self.pause:
-            return
-        if request not in self._wait_request_list:
-            logger.error(f'Requests waiting to end are lost. {request}')
-            return
-
-        self._wait_request_list.remove(request)
+        request.wait = wait
+        # insert or append
         if jump_in_line:
             self._request_list.insert(0, request)
         else:
@@ -336,45 +324,26 @@ class Scheduler:
     # tags
 
     def get_tags_copy(self) -> dict:
+        """ 获取一份 tags 的拷贝。
+        """
         return self._tags.copy()
 
-    def get_tag(self, key: str, default=None) -> Any:
-        """获取 tag。支持使用切片进行这个操作
-
-        Args:
-            key: key
-            default: 若key不存在，则返回这个默认值，默认：None
-
-        Returns:
-            获取到的值
-
+    def get_tag(self, key: str, default=None):
+        """ 获取 tag, 如果不存在则返回默认值
         """
-        if key in self._tags:
-            return self._tags[key]
-        else:
-            return default
+
+        if key in self:
+            return self[key]
+        return default
 
     def __getitem__(self, item: str):
-        return self.get_tag(item)
-
-    def set_tag(self, key: str, value: Any) -> NoReturn:
-        """设置 tag 的数据，支持使用切片进行这个操作。
-        建议只存放基础数据类型，如 int、float、str、list、dict。
-
-        Args:
-            key: key
-            value: 要设置的值
-
-        Warnings:
-            这个操作是线程安全的，但要注意 value 自身的线程安全性。
-
-        """
-        self._tags_lock.acquire()
-        self._tags[key] = value
-        self._tags_lock.release()
+        return self._tags[item]
 
     def __setitem__(self, key: str, value):
-        self.set_tag(key, value)
+        self._tags[key] = value
+
+    def __contains__(self, item: str) -> bool:
+        return item in self._tags
 
     # get by identity
 
@@ -390,25 +359,82 @@ class Scheduler:
 
     # state
 
+    @property
+    def is_running(self) -> bool:
+        """ 调度器线程是否正在运行。
+        即使暂停了调度器这也返回 True，这只代表调度器线程状态，而不是调度状态
+        """
+        return self.response_looper.is_alive() or self.request_looper.is_alive()
+
+    @property
     def is_requesting(self) -> bool:
         """ 是否有正在请求的连接
         """
         return len(self._link_requests) > 0
 
+    @property
+    def is_parsing(self) -> bool:
+        """ 是否有等待被解析的数据
+        """
+        return len(self._response_list) > 0
+
+    @property
     def is_saving(self) -> bool:
         """ 是否正处于保存中
         """
         return self._saving
 
+    @property
     def is_pause(self) -> bool:
         """ 是否在暂停中
         """
-        return self.pause
+        return self._pause
+
+    @property
+    def is_saveable(self) -> bool:
+        """ 获取当前状态是否可保存。
+        可保存需要关闭请求 Looper、完成全部现存请求、
+        解析完全部现存响应、不在 response_looper 的 in_action中、
+        暂停调度器、调度器的 is_saving 为 True
+        """
+        if not self.request_looper.is_pause:
+            return False
+        if self.is_requesting:
+            return False
+        if self.is_parsing:
+            return False
+        if self.response_looper.in_action:
+            return False
+        if not self.is_pause:
+            return False
+        if not self.is_saving:
+            return False
+        return True
+
+    def pause(self):
+        """ 暂停调度器，这会阻止新链接发送。
+        但不会停止现存连接
+        """
+        self.request_looper.pause()
+        # self.response_looper.pause()
+        self._pause = True
+
+    def unpause(self):
+        """ 解除暂停，开始发送新链接
+        """
+        self.request_looper.unpause()
+        # self.response_looper.unpause()
+        self._pause = False
 
     # get info
 
     def get_pending_request_info(self) -> List[dict]:
-        result = []
+        """ 获取请求等待队列的信息
+
+        Returns:
+            表示信息的字典，不是请求实例！
+        """
+        result: List[dict] = []
         for r in self._request_list:
             result.append({
                 'method': r.method,
@@ -419,10 +445,18 @@ class Scheduler:
                 'spider': r.spider.identity(),
                 'downloader': r.downloader.__name__,
                 'downloader_filter': r.downloader_filter.__name__,
+                'wait': r.wait
             })
+
+        # result.sort(key=lambda x: x['wait'], reverse=False)
         return result
 
     def get_link_request_info(self) -> List[dict]:
+        """ 获取正在下载中的请求信息
+
+        Returns:
+            表示信息的字典，不是请求实例！
+        """
         result = []
         for r in self._link_requests:
             result.append({
@@ -438,28 +472,19 @@ class Scheduler:
             })
         return result
 
-    def get_wait_request_info(self) -> List[dict]:
-        result = []
-        for r in self._wait_request_list:
-            result.append({
-                'method': r.method,
-                'url': r.url,
-                'data': r.data.copy(),
-                'headers': r.headers.copy(),
-                'tags': r.tags.copy(),
-                'spider': r.spider.identity(),
-                'downloader': r.downloader.__name__,
-                'downloader_filter': r.downloader_filter.__name__,
-                'start_time': r.start_time
-            })
-        return result
-
     def get_request_log_info(self) -> List[dict]:
+        """ 获取请求纪录的 copy
+
+        Returns:
+            表示信息的字典，不是请求实例！
+        """
         return self.request_log.copy()
 
     # add log
 
-    def _add_request_log(self, request: 'Request', state):
+    def _add_request_log(self, request: 'Request', state: str):
+        """ 当需要纪录请求状态时调用
+        """
         self.request_log.append({
             'url': request.url,
             'method': request.method,
@@ -490,11 +515,11 @@ class Scheduler:
             dir_path = self.load_from
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
-        if not os.path.isdir(dir_path):
-            raise NotADirectoryError(f"Save dir '{dir_path}' not is a dir")
-        logger.info_scheduler("Pause the scheduler, it will be saved after the existing request is completed")
+
         if fast:
+            logger.info_scheduler("Pause the scheduler, it will be saved")
             stops = []
+            self._request_list_lock.acquire()
             for lr in self._link_requests:
                 lr.stop()
                 stops.append(lr)
@@ -502,27 +527,28 @@ class Scheduler:
             for s in stops:
                 self._link_requests.remove(s)
                 self._request_list.insert(0, s)
+            self._request_list_lock.release()
             logger.info_scheduler(f"Fast save canceled the connection in {len(stops)} requests")
+        else:
+            logger.info_scheduler("Pause the scheduler, it will be saved after the existing request is completed")
 
-        self.pause = True
+        self.pause()
         self._saving = True
 
-        for request in self._wait_request_list:
-            self._request_list.append(request)
-        self._wait_request_list.clear()
+        def callback():
+            self._saving = False
+            if auto_continue:
+                self.unpause()
 
-        self.save_data = {
-            'path': dir_path,
-            'encoding': encoding,
-            'auto_continue': auto_continue,
-            'data': [
-                'md5',
-                'request_list',
-                'tags',
-                'spider_list',
-                'pipeline_list'
-            ]
-        }
+        def error_callback(e: Exception):
+            logger.ERROR(f"An error occurred while saving in the scheduler: {e}")
+            self._saving = False
+            if auto_continue:
+                self.unpause()
+
+        SchedulerSaver(scheduler=self,
+                       callback=callback, error_callback=error_callback,
+                       path=dir_path, encoding=encoding).start()
 
     def load(self, dir_path: str, encoding: str = 'utf-8') -> NoReturn:
         """ 从某个目录读取完整的调度器状态。
@@ -572,3 +598,79 @@ class Scheduler:
         with open(os.path.join(dir_path, 'md5.txt'), 'r', encoding=encoding) as f:
             self._requests_md5 = f.read().split('\n')
         logger.info_scheduler(f"Load '{dir_path}' finish")
+
+    def get_save_info(self) -> 'SchedulerSaveInfo':
+        save_info = SchedulerSaveInfo(
+            tags=self._tags.copy(),
+            request_list=self._request_list.copy(),
+            requests_md5=self._requests_md5.copy(),
+            pipeline_identity_list=list(self._pipelines.keys()),
+            spider_identity_list=list(self._spiders.keys())
+        )
+        return save_info
+        pass
+
+
+@dataclass
+class SchedulerSaveInfo:
+    tags: Dict[str, Any]
+    requests_md5: List[str]
+    request_list: List[Request]
+    spider_identity_list: List[str]
+    pipeline_identity_list: List[str]
+
+
+class SchedulerSaver(threading.Thread):
+    """ 调度器保存器，需要配合 SchedulerSaveInfo 使用
+    """
+
+    def __init__(self, scheduler: Scheduler,
+                 callback: Callable[[], NoReturn],
+                 error_callback: Callable[[Exception], NoReturn],
+                 path: str, encoding: str):
+        """ 调度器保存期
+
+        Args:
+            scheduler: 调度器
+            callback: 保存成功后的回调方法
+            info: 需要保存的信息
+        """
+        super().__init__()
+        self.encoding = encoding
+        self.path = path
+        self.scheduler = scheduler
+        self.callback = callback
+        self.error_callback = error_callback
+
+    def _save_to_file(self, file: str, content: str):
+        final_file = os.path.join(self.path, file)
+        with open(final_file, 'w', encoding=self.encoding) as f:
+            f.write(content)
+        logger.info_scheduler(f"Save {file} finish to {self.path}")
+
+    def run(self) -> None:
+        # check
+        if not self.scheduler.is_pause or not self.scheduler.is_saving:
+            raise Exception("Save scheduler must pause and set saving to True")
+        # wait
+        while not self.scheduler.is_saveable:
+            time.sleep(0.1)
+        try:
+            # SAVE
+            info = self.scheduler.get_save_info()
+            self._save_to_file('md5.txt', '\n'.join(info.requests_md5))
+            self._save_to_file('tags.json', json.dumps(info.tags, ensure_ascii=False))
+            self._save_to_file('spider_list.json', json.dumps(info.spider_identity_list, ensure_ascii=False))
+            self._save_to_file('pipeline_list.json', json.dumps(info.pipeline_identity_list, ensure_ascii=False))
+            result = []
+            for request in info.request_list:
+                result.append(request.to_dict())
+            self._save_to_file('request_list.json', json.dumps(result, ensure_ascii=False))
+            logger.info_scheduler(f"Save scheduler finish")
+        except Exception as e:
+            self.error_callback(e)
+            return
+
+        # Callback
+        if self.callback:
+            self.callback()
