@@ -10,7 +10,7 @@ class TestSpider(rm.Spider):
         yield rm.Item({'content': text})
 
 
-class TestPipeline(rm.Pipeline):
+class TestPipeline(rm.Saver):
     def save(self, item):
         print(item)
         pass

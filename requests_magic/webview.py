@@ -52,7 +52,8 @@ class SchedulerWebView(threading.Thread):
         self.scheduler = scheduler
         self.app = Bottle()
         self.app.add_route(Route(self.app, '/', 'GET', self.index))
-        self.app.add_route(Route(self.app, '/command/<args>', 'GET', self.command))
+        self.app.add_route(
+            Route(self.app, '/command/<args>', 'GET', self.command))
 
     def index(self) -> str:
         """ 首页 view

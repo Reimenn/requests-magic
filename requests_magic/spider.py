@@ -1,12 +1,10 @@
-from .request import Request
-from .utils import get_log_name
-import requests
+from requests_magic.request import Request, Response
+from requests_magic.utils import get_log_name
 
 __FUCK_CIRCULAR_IMPORT = False
 if __FUCK_CIRCULAR_IMPORT:
     from .scheduler import Scheduler
 
-import logging
 
 class Spider:
 
@@ -41,16 +39,17 @@ class Spider:
         """
         pass
 
-    def parse(self, result: requests.Response, request: Request):
+    def parse(self, response: Response, request: Request):
         """解析函数的例子，默认情况下并没有人会调用这个函数
         Warnings:
             解析函数会被好多线程执行
         """
         pass
 
-    def preparse(self, result: requests.Response, request: Request) -> requests.Response:
+    def preparse(self, response: Response,
+                 request: Request) -> Response:
         """默认的预解析函数
         Warnings:
             预解析函数会被好多线程执行
         """
-        return result
+        return response

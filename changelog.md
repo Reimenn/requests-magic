@@ -1,8 +1,22 @@
+## v1.7-beta
+
+2021年12月15日
+
+---
+
+#### 增加:
+
+- 与底层请求库 requests 解耦, 独立实现了 magic 自己的 Response 类, 并添加了对应的与 requests.Response 适配的函数.
+
+- 创建了 requests_adapter 模块用于适配 requests 库.
+
 ## v1.6-beta
 
 2021年12月15日
 
 ---
+
+Pipeline 更名为更合适的 Saver
 
 #### 增加：
 

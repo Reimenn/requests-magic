@@ -13,7 +13,7 @@ class Item(dict):
             >>> import requests_magic as rm
             >>> # in callback:
             >>>     yield rm.Item(result.json(),tags={'file':'./output.json'})
-            >>> # auto save the Item to output.json if use SimpleFilePipeline
+            >>> # auto save the Item to output.json if use SimpleFileSaver
         """
         super().__init__()
         self.name = name

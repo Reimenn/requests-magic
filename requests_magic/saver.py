@@ -1,4 +1,4 @@
-"""管道基类和内置的管道
+"""Saver基类和内置的Saver
 """
 
 import os
@@ -13,17 +13,17 @@ if __FUCK_CIRCULAR_IMPORT:
     from .item import Item
 
 
-class Pipeline:
-    """管道基类，用来持久化数据，这是一个新线程
+class Saver:
+    """Saver基类，用来持久化数据，这是一个新线程
     """
 
     def __init__(self, scheduler: 'Scheduler' = None, name: str = ""):
-        """管道基类，用来持久化数据，这是一个新线程
+        """saver基类，用来持久化数据，这是一个新线程
 
         Args:
-            name: 管道的名字，希望能帮助 debug
+            name: saver的名字，希望能帮助 debug
         Warnings:
-            不要实例化这个类，应该继承Pipeline实现你自己的持久化.
+            不要实例化这个类，应该继承 Saver 实现你自己的持久化.
             可重写的方法有 save 和 acceptable
         """
         super().__init__()
@@ -45,15 +45,15 @@ class Pipeline:
 
     @property
     def is_running(self) -> bool:
-        """ 当前 Pipeline 是否正在运行中.
-        这返回的是 Pipeline 线程的运行状态.
+        """ 当前 Saver 是否正在运行中.
+        这返回的是 Saver 线程的运行状态.
         """
 
         return self._thread.is_alive()
 
     @property
     def is_saving(self) -> bool:
-        """ 获取 Pipeline 是否正在保存.
+        """ 获取 Saver 是否正在保存.
         如果保存的 Item 队列为空则返回True.
         """
 
@@ -61,7 +61,7 @@ class Pipeline:
 
     def start(self):
         if self.is_running:
-            logger.WARNING(f"{self} Pipeline is running")
+            logger.WARNING(f"{self} Saver is running")
             return
         self._thread.start()
 
@@ -74,16 +74,20 @@ class Pipeline:
                 self._item_list.remove(item)
                 try:
                     self.save(item)
-                    logger.info_saveitem_item(f"{self} [SAVE ITEM {item.name} Finish]")
+                    logger.info_saveitem_item(
+                        f"{self} [SAVE ITEM {item.name} Finish]"
+                    )
                 except Exception as e:
-                    logger.error(f"{self} [SAVE ITEM {item.name} Error] {e}")
+                    logger.error(
+                        f"{self} [SAVE ITEM {item.name} Error] {e}"
+                    )
                     raise e
             else:
                 time.sleep(0.1)
 
     def acceptable(self, item: 'Item') -> bool:
         """ 判断是否可以接收某个 item。
-        调度器会根据这里的返回值判断是否继续用这个管道保存这个item，
+        调度器会根据这里的返回值判断是否继续用这个saver保存这个item，
         重写这里实现你自己的判断
 
         Args:
@@ -109,28 +113,29 @@ class Pipeline:
 
     @property
     def identity(self) -> str:
-        """ 获取当前实例的唯一标识，中断续爬用这个表示获取当前管道
+        """ 获取当前实例的唯一标识，中断续爬用这个表示获取当前saver
         Warnings:
-            标识相同的管道只能存在一个
+            标识相同的saver只能存在一个
         """
         return f'{self.__class__.__name__}|{self.name}'
 
 
-class SimpleConsolePipeline(Pipeline):
+class SimpleConsoleSaver(Saver):
     """
-    简单的控制台管道，直接把item转换成字符串并显示在控制台上
+    简单的控制台saver，直接把item转换成字符串并显示在控制台上
     """
 
     def save(self, item):
         print(str(item))
 
 
-class SimpleFilePipeline(Pipeline):
+class SimpleFileSaver(Saver):
     """
-    简单的文件持久化管道
+    简单的文件持久化saver
     """
 
-    def __init__(self, scheduler: 'Scheduler' = None, name: str = "SimpleFilePipeline",
+    def __init__(self, scheduler: 'Scheduler' = None,
+                 name: str = "SimpleFileSaver",
                  output_file_tag_key: str = 'file',
                  mode: str = 'a',
                  auto_create_folder: bool = True,
@@ -138,11 +143,11 @@ class SimpleFilePipeline(Pipeline):
                  newline: str = '\n',
                  ):
         """
-        简单的文件持久化管道
+        简单的文件持久化saver
         Parameters
         ----------
         name
-            管道的名字，希望能帮助 debug
+            saver的名字，希望能帮助 debug
         output_file_tag_key
             在 item.tags 中表示保存路径的 key，值必须是字符串，默认：file
         mode
@@ -164,12 +169,14 @@ class SimpleFilePipeline(Pipeline):
         判断 output_file_tag_key 是否存在以及值是否是字符串
         这是会被好多线程调用的方法
         """
-        return self.output_file_tag_key in item.tags and isinstance(item.tags[self.output_file_tag_key], str)
+        return \
+            self.output_file_tag_key in item.tags and \
+            isinstance(item.tags[self.output_file_tag_key], str)
 
     def save(self, item):
         """
         作为文件保存item
-        这是执行在管道自身线程上的方法
+        这是执行在saver自身线程上的方法
         """
         file = item.tags[self.output_file_tag_key]
         path = os.path.abspath(os.path.join(file, '..'))
@@ -177,10 +184,11 @@ class SimpleFilePipeline(Pipeline):
             if self.auto_create_folder:
                 os.makedirs(path)
             else:
-                logger.error_pipeline(f"{self} {path} path not exists")
+                logger.error_saver(f"{self} {path} path not exists")
                 return
         if not os.path.isdir(path):
-            logger.error_pipeline(f"{self} {path} not is a dir")
+            logger.error_saver(f"{self} {path} not is a dir")
             return
-        with open(file, self.mode, encoding=self.encoding, newline=self.newline) as f:
+        with open(file, self.mode, encoding=self.encoding,
+                  newline=self.newline) as f:
             f.write(str(item))

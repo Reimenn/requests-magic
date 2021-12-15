@@ -4,13 +4,15 @@
 
 - [ ] 强类型化
 
-- [ ] 封装响应结果
+### v1.7
 
-- [ ] 名称修改，Spider更名为Worker，Pipeline更名为Saver
+- [x] 封装响应结果
+
+- [x] 名称修改，Pipeline更名为Saver
 
 ### v1.6
 
-- [x] python 版本提升到 3.8
+- [x] python 版本提升到 3.7 (引入了 dataclass)
 
 - [x] 分开Request 中的 param 和 data 参数 !!!
 

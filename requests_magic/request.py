@@ -1,10 +1,14 @@
 """请求类和请求线程类
 """
 import hashlib
-from typing import Callable, NoReturn, Dict, Any
-from .mmlog import logger
-from .downloader import *
-from .utils import getattr_in_module, get_log_name
+import threading
+import time
+import json
+from typing import Callable, NoReturn, Dict, Any, List, Union
+from dataclasses import dataclass
+from requests_magic.mmlog import logger
+import requests_magic.downloader as magic_d
+from requests_magic.utils import getattr_in_module, get_log_name
 
 __FUCK_CIRCULAR_IMPORT = False
 if __FUCK_CIRCULAR_IMPORT:
@@ -30,14 +34,17 @@ class Request:
         'wait'
     )
 
-    def __init__(self, url: str, callback: Callable[[Any, 'Request'], NoReturn],
-                 data: dict = None, params: dict = None, method: str = 'GET',
+    def __init__(self, url: str,
+                 callback: Callable[[Any, 'Request'], NoReturn],
+                 method: str = 'GET',
+                 data: dict = None, params: dict = None,
                  headers: dict = None, cookies: dict = None,
-                 time_out: int = 10, time_out_wait: int = 15, time_out_retry: int = 3,
+                 time_out: int = 10, time_out_wait: int = 15,
+                 time_out_retry: int = 3,
                  tags: dict = None, wait: float = 0,
-                 downloader: Callable[['Request'], NoReturn] = requests_downloader,
-                 downloader_filter: Callable[['Result', 'Request'], NoReturn] = requests_downloader_filter,
-                 preparse: Callable[['Result', 'Request'], NoReturn] = None,
+                 downloader: Callable[['Request'], NoReturn] = magic_d.requests_downloader,
+                 downloader_filter: Callable[['Response', 'Request'], NoReturn] = magic_d.requests_downloader_filter,
+                 preparse: Callable[['Response', 'Request'], NoReturn] = None,
                  name: str = '',
                  **kwargs):
         """表示一个请求，这里会自动创建 RequestThread
@@ -109,8 +116,10 @@ class Request:
         self.kwargs = kwargs
 
         # Request self field
-        self.result = None
-        self.show_url = self.url if len(self.url) < 40 else '...' + self.url[-37:-1]
+        self.response:'Response' = None
+        self.show_url = \
+            (self.url if len(self.url) < 40 else '...') + \
+            self.url[-37:-1]
         self._thread: threading.Thread = None
 
     def __str__(self) -> str:
@@ -124,7 +133,7 @@ class Request:
     def is_finish(self) -> bool:
         """ 是否已经请求完成，根据是否有结果和 is_requesting 判断
         """
-        return self.result and not self.is_requesting()
+        return self.response and not self.is_requesting()
 
     def start(self):
         """开始下载，自动创建 RequestThread，下载完成后会自动调用调度器的方法
@@ -132,7 +141,9 @@ class Request:
         if self._thread:
             logger.error(f"{self} downloading, Can't start")
             return
-        logger.info_request(f"{self} [{self.method.upper()} START] {self.show_url}")
+        logger.info_request(
+            f"{self} [{self.method.upper()} START] {self.show_url}"
+        )
         self._thread = threading.Thread(target=self._request_thread)
         self.start_time = time.time()
         self._thread.start()
@@ -144,7 +155,8 @@ class Request:
             md5字符串
         """
         return hashlib.md5(
-            f'{self.method};{self.url};{self.data};{self.time_out_retry}'.encode('utf-8')
+            f'{self.method};{self.url};{self.data};'
+            f'{self.time_out_retry}'.encode('utf-8')
         ).hexdigest()
 
     def _request_thread_error(self, error: Exception) -> NoReturn:
@@ -155,16 +167,18 @@ class Request:
         self.scheduler.downloader_abandon(self)
         logger.error(f'{self} {error}')
 
-    def _request_thread_fail(self, operate: DownloaderFailOperate) -> NoReturn:
+    def _request_thread_fail(self, operate: magic_d.DownloaderFailOperate
+                             ) -> NoReturn:
         """ 当下载器或下载过滤器返回失败操作时调用。（在下载线程中调用）。
         这会重试或放弃这个请求。
         """
         self.stop()
-        if isinstance(operate, Timeout):
-            message = f'{self} Request is timeout ({self.time_out}s) to {self.url}. '
+        if isinstance(operate, magic_d.Timeout):
+            message = f'{self} Request is timeout ({self.time_out}s) ' \
+                      f'to {self.url}. '
             if self.time_out_retry > 0:
-                message += \
-                    f'Try again in {self.time_out_wait} seconds. ({self.time_out_retry - 1} remaining)'
+                message += f'Try again in {self.time_out_wait} seconds.' \
+                           f' ({self.time_out_retry - 1} remaining)'
             else:
                 message += 'Gave up the request'
             logger.warning(message)
@@ -172,27 +186,39 @@ class Request:
                 self.time_out_retry -= 1
                 # if self.time_out_wait > 0:
                 #     time.sleep(self.time_out_wait)
-                self.scheduler.downloader_retry(self, wait=self.time_out_wait)
-        elif isinstance(operate, Retry):
-            logger.warning(f'{self} Retry [{self.method.upper()}] {self.show_url} in {operate.wait} seconds')
+                self.scheduler.downloader_retry(
+                    self, wait=self.time_out_wait
+                )
+        elif isinstance(operate, magic_d.Retry):
+            logger.warning(
+                f'{self} Retry [{self.method.upper()}] '
+                f'{self.show_url} in {operate.wait} seconds'
+            )
             # if operate.wait > 0:
             #     time.sleep(operate.wait)
-            self.scheduler.downloader_retry(self, jump_in_line=operate.jump_in_line, wait=operate.wait)
-        elif isinstance(operate, Abandon):
-            logger.warning(f'{self} Abandon [{self.method.upper()}] {self.show_url}')
+            self.scheduler.downloader_retry(
+                self, jump_in_line=operate.jump_in_line, wait=operate.wait
+            )
+        elif isinstance(operate, magic_d.Abandon):
+            logger.warning(
+                f'{self} Abandon [{self.method.upper()}] {self.show_url}'
+            )
             self.scheduler.downloader_abandon(self)
-        elif isinstance(operate, Error):
+        elif isinstance(operate, magic_d.Error):
             logger.error(f'{self} {operate.message}')
             self.scheduler.downloader_abandon(self)
 
-    def _request_thread_finish(self, result: Any) -> NoReturn:
+    def _request_thread_finish(self, response: 'Response') -> NoReturn:
         """ 当下载器或下载过滤器成功时调用。（在下载线程中调用）。
         这会解析这个请求的结果。
         """
         self.stop()
-        self.result = result
-        logger.info_request(f"{self} [{self.method.upper()} OVER {round(self.total_time, 2)}s] {self.show_url}")
-        self.scheduler.downloader_finish(self.result, self)
+        self.response = response
+        logger.info_request(
+            f"{self} [{self.method.upper()} OVER "
+            f"{round(self.total_time, 2)}s] {self.show_url}"
+        )
+        self.scheduler.downloader_finish(self.response, self)
 
     def _request_thread(self) -> NoReturn:
         """开始下载，这是新线程执行的方法
@@ -200,29 +226,29 @@ class Request:
         self.start_time = time.time()
 
         # download
-        result = self.downloader(self)
+        response = self.downloader(self)
         if self._thread != threading.current_thread():
             return
         self.total_time = time.time() - self.start_time
-        if isinstance(result, DownloaderFailOperate):
-            self._request_thread_fail(result)
+        if isinstance(response, magic_d.DownloaderFailOperate):
+            self._request_thread_fail(response)
             return
-        if isinstance(result, Exception):
-            self._request_thread_error(result)
+        if isinstance(response, Exception):
+            self._request_thread_error(response)
             return
 
         # filter
-        result_filter = self.downloader_filter(result, self)
+        response_filter = self.downloader_filter(response, self)
         if self._thread != threading.current_thread():
             return
-        if isinstance(result_filter, DownloaderFailOperate):
-            self._request_thread_fail(result_filter)
+        if isinstance(response_filter, magic_d.DownloaderFailOperate):
+            self._request_thread_fail(response_filter)
             return
-        if isinstance(result_filter, Exception):
-            self._request_thread_error(result_filter)
+        if isinstance(response_filter, Exception):
+            self._request_thread_error(response_filter)
             return
 
-        self._request_thread_finish(result)
+        self._request_thread_finish(response)
 
     def stop(self) -> NoReturn:
         """终止请求线程
@@ -245,16 +271,20 @@ class Request:
         """
         if self.is_requesting():
             logger.warning(
-                "The downloading state will not be retained after the request being downloaded is converted to json")
+                "The downloading state will not be retained after"
+                " the request being downloaded is converted to json")
         if self.is_finish():
             logger.warning(
-                "The downloaded result will not be retained after the request being downloaded is converted to json")
+                "The downloaded result will not be retained after"
+                " the request being downloaded is converted to json")
         json_dict = {
             'save_tags': {
                 'downloader':
-                    (self.downloader.__module__, self.downloader.__name__),
+                    (self.downloader.__module__,
+                     self.downloader.__name__),
                 'downloader_filter':
-                    (self.downloader_filter.__module__, self.downloader_filter.__name__),
+                    (self.downloader_filter.__module__,
+                     self.downloader_filter.__name__),
                 'callback': self.callback.__name__,
                 'preparse': self.preparse.__name__,
                 'spider': self.spider.identity,
@@ -266,7 +296,8 @@ class Request:
         return json_dict
 
     @staticmethod
-    def from_dict(data_dict: Dict[str, Union[int, float, str, dict]], scheduler: 'Scheduler') -> 'Request':
+    def from_dict(data_dict: Dict[str, Union[int, float, str, dict]],
+                  scheduler: 'Scheduler') -> 'Request':
         """ 从Dict中解析出新的 Request
 
         Args:
@@ -282,13 +313,79 @@ class Request:
         """
         save_tags = data_dict['save_tags']
         del data_dict['save_tags']
-        spider = scheduler.get_spider_by_identity(save_tags['spider'])
-        data_dict['downloader'] = getattr_in_module(*save_tags['downloader'])
-        data_dict['downloader_filter'] = getattr_in_module(*save_tags['downloader_filter'])
-        data_dict['callback'] = getattr(spider, save_tags['callback'])
-        data_dict['preparse'] = getattr(spider, save_tags['preparse'])
+        spider = scheduler.get_spider_by_identity(
+            save_tags['spider']
+        )
+        data_dict['downloader'] = getattr_in_module(
+            *save_tags['downloader']
+        )
+        data_dict['downloader_filter'] = getattr_in_module(
+            *save_tags['downloader_filter']
+        )
+        data_dict['callback'] = getattr(
+            spider, save_tags['callback']
+        )
+        data_dict['preparse'] = getattr(
+            spider, save_tags['preparse']
+        )
 
         result: Request = Request(**data_dict)
         result.kwargs = save_tags['kwargs']
         result.spider = spider
         return result
+
+
+@dataclass
+class SetCookie:
+    version: int
+    name: str
+    value: str
+    domain: str = ''
+    path: str = '/'
+    expires: int = 0
+    secure: bool = False
+    comment: str = None
+
+
+@dataclass
+class Response:
+    request: Request
+    url: str
+    content: bytes
+    status_code: int
+    headers: dict
+    set_cookies: List[SetCookie]
+    reason: str
+    request_time: float
+
+    @property
+    def is_redirect(self) -> bool:
+        return 'location' in self.headers and 300 <= self.status_code <= 399
+
+    @property
+    def location(self) -> str:
+        return self.headers['location']
+
+    @property
+    def encoding(self) -> str:
+        encoding = 'UTF-8'
+        ct: str = self.headers.get('content-type', 'text/html; charset=utf-8')
+        for s in ct.split(';'):
+            s: str = s.strip()
+            if s.startswith('charset='):
+                encoding = s[8:]
+                break
+        return encoding
+
+    @property
+    def text(self) -> str:
+        return self.text_by(self.encoding)
+
+    @property
+    def json(self) -> dict:
+        return json.loads(self.text)
+
+    def text_by(self, encoding: str) -> str:
+        if isinstance(self.content, str):
+            return self.content
+        return self.content.decode(encoding, 'replace')

@@ -46,7 +46,7 @@ class MySpider(rm.Spider):
 最后弄一个调度器开始爬虫：
 
 ```python
-rm.Scheduler(MySpider, rm.SimpleFilePipeline, web_view=3344).start()
+rm.Scheduler(MySpider, rm.SimpleFileSaver, web_view=3344).start()
 # web_view 可以在 3344 端口开启一个 web 页面用来监控爬虫状态
 # 第一个参数表示爬虫，可以传进去一个列表，多个爬虫同时工作
 # 第二个参数表示管道，可以传进去一个列表，多个管道同时保存
@@ -58,7 +58,7 @@ SimpleFilePipeline 默认会根据 Item 中 tags 的 file 保存文件，或者�
 import requests_magic as rm
 
 
-class MyPipeline(rm.Pipeline):
+class MyPipeline(rm.Saver):
     def save(self, item):
         with open(item.tags['file'], 'w') as f:
             f.write(str(item))  

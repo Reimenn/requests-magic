@@ -1,10 +1,10 @@
 """ mmlog 模块，希望能更适合爬虫
 """
 import threading
-from collections import namedtuple
-from typing import List, Callable, NoReturn
 import sys
 import time
+from collections import namedtuple
+from typing import List, Callable, NoReturn
 
 
 def get_time_str(formatter: str = '%Y-%m-%d %H:%M:%S') -> str:
@@ -79,12 +79,19 @@ class FileHandler(LoggerHandler):
     """ 示范性质的文件日志处理器
     """
 
-    def __init__(self, file_path: str, encoding: str = 'utf-8', acceptable_tags: List[str] = None, **kwargs):
+    def __init__(self, file_path: str,
+                 encoding: str = 'utf-8',
+                 acceptable_tags: List[str] = None,
+                 **kwargs):
         super().__init__(acceptable_tags)
-        self.file = open(file_path, 'a', encoding=encoding, **kwargs)
+        self.file = open(
+            file_path, 'a', encoding=encoding, **kwargs
+        )
 
     def formatter(self, tags: List[str], message) -> str:
-        return super(FileHandler, self).formatter(tags, message) + '\n'
+        return super(
+            FileHandler, self
+        ).formatter(tags, message) + '\n'
 
     def on_log(self, tags: List[str], message: str):
         self.file.write(message)
@@ -95,7 +102,8 @@ Log = namedtuple('log', ['tags', 'message'])
 
 
 class Logger(threading.Thread):
-    def __init__(self, use_thread: bool = False, name: str = 'mm-Logger'):
+    def __init__(self, use_thread: bool = False,
+                 name: str = 'mm-Logger'):
         super().__init__(name=name)
         self.handlers: List[LoggerHandler] = []
         self.to_upper: bool = True
@@ -139,7 +147,7 @@ class Logger(threading.Thread):
         else:
             self.handle(log)
 
-    def __getattr__(self, item: str):
+    def __getattr__(self, item: str) -> Callable[[str], NoReturn]:
         tags = item.split('_')
         if self.to_upper:
             tags = [i.upper() for i in tags]

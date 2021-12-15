@@ -5,42 +5,6 @@ import threading
 import time
 from typing import Callable, NoReturn
 
-__FUCK_CIRCULAR_IMPORT = False
-if __FUCK_CIRCULAR_IMPORT:
-    from .request import Request
-
-
-def request_to_requests_kwargs(request: "Request") -> dict:
-    """ 根据 Request 生成 requests.request 会用到的参数字典
-
-    Args:
-        request: 请求
-    Returns:
-        参数字典
-    """
-    result: dict = {
-        'method': request.method,
-        'url': request.url,
-        'timeout': request.time_out,
-        'params': request.params
-    }
-
-    if request.data:
-        if isinstance(request.data, dict):
-            result['json'] = request.data
-        else:
-            result['data'] = request.data
-
-    if request.headers:
-        result['headers'] = request.headers
-    if request.cookies:
-        result['cookies'] = request.cookies
-
-    for k, v in request.kwargs.items():
-        result[k] = v
-
-    return result
-
 
 def getattr_in_module(module_name: str, func_name: str):
     """ 在某个模块中获取属性

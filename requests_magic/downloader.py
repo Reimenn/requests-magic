@@ -1,13 +1,15 @@
 """下载中间件们
 """
 
-from .utils import *
 from typing import Union
+from requests_magic.requests_adapter import \
+    create_requests_request_kwargs_from_magic_request, \
+    create_response_from_requests
 import requests
 
 __FUCK_CIRCULAR_IMPORT = False
 if __FUCK_CIRCULAR_IMPORT:
-    from .request import Request
+    from requests_magic.request import Request, Response
 
 
 class DownloaderFailOperate:
@@ -52,7 +54,8 @@ class Error(DownloaderFailOperate):
         self.message = message
 
 
-def requests_downloader(request: 'Request') -> Union[requests.Response, DownloaderFailOperate]:
+def requests_downloader(request: 'Request') \
+        -> Union['Response', DownloaderFailOperate]:
     """这是默认的下载中间件，基于 requests。
 
     Args:
@@ -60,19 +63,26 @@ def requests_downloader(request: 'Request') -> Union[requests.Response, Download
     Raises:
         RequestTimeoutError: 请求超时，这会尝试重试请求
     Returns:
-        下载的最终结果，或者下载失败时返回 DownloaderFailOperate 的子类们（Retry,Abandon,Timeout,Error等）
+        返回 Response，或者下载失败时返回 DownloaderFailOperate 的子类们（Retry,Abandon,Timeout,Error等）
         如果返回的是个异常，也会和 Error 类一样放弃请求并显示错误信息
     """
-    kwargs = request_to_requests_kwargs(request)
+    kwargs = \
+        create_requests_request_kwargs_from_magic_request(request)
     try:
-        return requests.request(**kwargs)
-    except requests.Timeout as timeoutError:
+        return \
+            create_response_from_requests(
+                requests.request(**kwargs), request
+            )
+
+    except requests.Timeout:
         return Timeout()
     except requests.RequestException as e:
         return Error(e)
 
 
-def requests_downloader_filter(response: requests.Response, request: 'Request') -> DownloaderFailOperate:
+def requests_downloader_filter(
+        response: 'Response', request: 'Request') \
+        -> DownloaderFailOperate:
     """默认的请求过滤器。空的，不过滤任何东西
     用来过滤下载完成后的结果
 
