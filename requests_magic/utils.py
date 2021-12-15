@@ -4,11 +4,14 @@ import importlib
 import threading
 import time
 from typing import Callable, NoReturn
-from .request import Request
+
+__FUCK_CIRCULAR_IMPORT = False
+if __FUCK_CIRCULAR_IMPORT:
+    from .request import Request
 
 
 def request_to_requests_kwargs(request: "Request") -> dict:
-    """根据 Request 生成 requests.request 会用到的参数字典
+    """ 根据 Request 生成 requests.request 会用到的参数字典
 
     Args:
         request: 请求
@@ -30,10 +33,11 @@ def request_to_requests_kwargs(request: "Request") -> dict:
 
     if request.headers:
         result['headers'] = request.headers
+    if request.cookies:
+        result['cookies'] = request.cookies
 
     for k, v in request.kwargs.items():
-        if k not in result:
-            result[k] = v
+        result[k] = v
 
     return result
 

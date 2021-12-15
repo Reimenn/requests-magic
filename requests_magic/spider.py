@@ -6,6 +6,7 @@ __FUCK_CIRCULAR_IMPORT = False
 if __FUCK_CIRCULAR_IMPORT:
     from .scheduler import Scheduler
 
+import logging
 
 class Spider:
 
@@ -21,7 +22,8 @@ class Spider:
         """
         self.scheduler: 'Scheduler' = scheduler
         self.name = name
-        self.default_headers: dict = {}
+        self.headers: dict = {}
+        self.cookies: dict = {}
 
     def __str__(self) -> str:
         return get_log_name(self, True)

@@ -31,7 +31,8 @@ class Request:
     )
 
     def __init__(self, url: str, callback: Callable[[Any, 'Request'], NoReturn],
-                 data: dict = None, params: dict = None, method: str = 'GET', headers: dict = None,
+                 data: dict = None, params: dict = None, method: str = 'GET',
+                 headers: dict = None, cookies: dict = None,
                  time_out: int = 10, time_out_wait: int = 15, time_out_retry: int = 3,
                  tags: dict = None, wait: float = 0,
                  downloader: Callable[['Request'], NoReturn] = requests_downloader,
@@ -69,7 +70,9 @@ class Request:
         if params is None:
             params = {}
         if headers is None:
-            headers = callback.__self__.default_headers.copy()
+            headers = callback.__self__.headers.copy()
+        if cookies is None:
+            cookies = callback.__self__.cookies.copy()
 
         # http
         self.url: str = url
@@ -77,6 +80,7 @@ class Request:
         self.params: dict = params
         self.method: str = method
         self.headers: dict = headers
+        self.cookies: dict = cookies
 
         # scheduler
         self.callback: Callable[[Any, 'Request'], NoReturn] = callback

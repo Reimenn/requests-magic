@@ -1,30 +1,52 @@
 ## v1.6-beta
 
+2021年12月15日
+
+---
+
+#### 增加：
+
+- Request 增加 cookies 参数。
+
+- Spider 增加 cookies 作为默认 cookies。
+
+#### 修改：
+
+- Request 的 Kwargs 参数可以覆盖其他 Requests 参数。
+
+- Spider 的 default_headers 更名为 headers。
+
+- mmlog 模块的 Handler 默认格式化方法中如果遇到换行，会给新行自动缩进，同时缩短了前缀时间的长度。
+
+- mmlog 模块的 Logger 可以控制是否单独一个线程了, 现在默认不会开启新线程, 而会使用输出日志的当前线程。 
+
+## v1.6-beta
+
 2021年12月14日
 
 ---
 
 #### 添加:
 
-- 管道可以通过 is_saving 获取当前是否需要保存
+- 管道可以通过 is_saving 获取当前是否需要保存。
 
-- 管道和Spider的一些获取状态的方法改成了封装的 property
+- 管道和Spider的一些获取状态的方法改成了封装的 property。
 
 #### 修改：
 
 - 给调度器增加了请求队列锁和一个添加 spider 和 pipeline 的锁。
 
-> 原有的无锁设计可能会在去重模式下仍然下载重复的链接
+> 原有的无锁设计可能会在去重模式下仍然下载重复的链接。
 
-- 取消了调度器的 set_tag 方法, 并加入了对 in 运算符的支持, get_teg 方法支持设置默认值. 同时取消了 tags 锁.
+- 取消了调度器的 set_tag 方法, 并加入了对 in 运算符的支持, get_teg 方法支持设置默认值. 同时取消了 tags 锁。
 
-- 管道不再对外暴露 thread 属性
+- 管道不再对外暴露 thread 属性。
 
-- 调度器实例化时可以不再传递任何Spider了.
+- 调度器实例化时可以不再传递任何Spider了。
 
-- 调度器的实例化参数中, Spider 和 Pipeline 可以传递实例了, 如果传递的是实例则使用 add_spider 或 add_pipeline 方法.
+- 调度器的实例化参数中, Spider 和 Pipeline 可以传递实例了, 如果传递的是实例则使用 add_spider 或 add_pipeline 方法。
 
-- 调度器的 add_pipeline 方法添加了 auto_start 方法
+- 调度器的 add_pipeline 方法添加了 auto_start 方法。
 
 ## v1.6-beta
 
@@ -45,7 +67,7 @@
 - Scheduler 调度器大改，现在调度器有两个线程，分别用于处理请求和响应。
 
 > 新调度器使用了两个 Looper，其中请求处理 Looper 会随着调度器的暂停而暂停，响应处理 Looper 不会暂停。
-> 
+>
 > 在调度器保存状态（非立即模式）时，会先暂停调度器和请求处理 Looper 以防止发起新请求，然后等待现存请求下载完毕，再等待待解析响应列表为空以及响应处理 Looper 处理完毕，最后保存状态。
 
 ## v1.5-beta

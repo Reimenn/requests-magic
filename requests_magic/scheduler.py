@@ -632,19 +632,18 @@ class SchedulerSaveInfo:
 
 
 class SchedulerSaver(threading.Thread):
-    """ 调度器保存器，需要配合 SchedulerSaveInfo 使用
+    """ 调度器状态保存器，需要配合 SchedulerSaveInfo 使用
     """
 
     def __init__(self, scheduler: Scheduler,
                  callback: Callable[[], NoReturn],
                  error_callback: Callable[[Exception], NoReturn],
                  path: str, encoding: str):
-        """ 调度器保存期
+        """ 调度器状态保存器
 
         Args:
             scheduler: 调度器
             callback: 保存成功后的回调方法
-            info: 需要保存的信息
         """
         super().__init__()
         self.encoding = encoding

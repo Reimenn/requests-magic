@@ -6,6 +6,8 @@
 
 - [ ] 封装响应结果
 
+- [ ] 名称修改，Spider更名为Worker，Pipeline更名为Saver
+
 ### v1.6
 
 - [x] python 版本提升到 3.8

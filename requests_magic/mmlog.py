@@ -2,10 +2,14 @@
 """
 import threading
 from collections import namedtuple
-from typing import List
+from typing import List, Callable, NoReturn
 import sys
-import datetime
 import time
+
+
+def get_time_str(formatter: str = '%Y-%m-%d %H:%M:%S') -> str:
+    local_time = time.localtime(time.time())
+    return time.strftime(formatter, local_time)
 
 
 class LoggerHandler:
@@ -46,7 +50,13 @@ class LoggerHandler:
         Returns:
             格式化后的字符串
         """
-        return f"{datetime.datetime.now()} [{'|'.join(tags)}] {message}"
+        header = f"{get_time_str()} [{'|'.join(tags)}] "
+        spaces: str = ' ' * len(header)
+        lines = str(message).split('\n')
+        result: str = lines[0]
+        if len(lines) > 1:
+            result += '\n' + '\n'.join(spaces + i for i in lines[1:])
+        return header + result
 
     def on_log(self, tags: List[str], message: str):
         """ 真正的日志处理
@@ -62,7 +72,7 @@ class ConsoleHandler(LoggerHandler):
         out = sys.stdout
         if 'ERROR' in tags or 'WARNING' in tags:
             out = sys.stderr
-        print(str(message), file=out)
+        out.write(str(message) + "\n")
 
 
 class FileHandler(LoggerHandler):
@@ -85,29 +95,49 @@ Log = namedtuple('log', ['tags', 'message'])
 
 
 class Logger(threading.Thread):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, use_thread: bool = False, name: str = 'mm-Logger'):
+        super().__init__(name=name)
         self.handlers: List[LoggerHandler] = []
         self.to_upper: bool = True
-        self.log_queue: List[Log] = []
+        self._use_thread = use_thread
+        if use_thread:
+            self._log_queue: List[Log] = []
+            self._start_lock: threading.Lock = threading.Lock()
 
     def run(self) -> None:
         while True:
-            if self.log_queue:
-                log = self.log_queue[0]
-                self.log_queue.remove(log)
-                tags = log.tags
-                for handler in self.handlers:
-                    if handler.acceptable(tags):
-                        formatted = handler.formatter(tags, log.message)
-                        handler.on_log(tags, formatted)
+            if self._log_queue:
+                log = self._log_queue[0]
+                self.handle(log)
+                self._log_queue.remove(log)
             else:
                 time.sleep(0.1)
 
+    def handle(self, log: Log) -> None:
+        """ 让 Handler 们处理日志
+
+        Args:
+            log: 日志
+        """
+        tags = log.tags
+        for handler in self.handlers:
+            if handler.acceptable(tags):
+                formatted = handler.formatter(tags, log.message)
+                handler.on_log(tags, formatted)
+
     def log(self, tags: List[str], message):
-        if not self.is_alive():
-            self.start()
-        self.log_queue.append(Log(tags=tags, message=message))
+        """ 发送日志
+        """
+        log = Log(tags=tags, message=message)
+        if self._use_thread:
+            self._start_lock.acquire()
+            if not self.is_alive():
+                self.start()
+            self._start_lock.release()
+            self._log_queue.append(log)
+
+        else:
+            self.handle(log)
 
     def __getattr__(self, item: str):
         tags = item.split('_')
